@@ -20,7 +20,9 @@ const (
 	BOOLEAN_OBJ = "BOOLEAN"
 	STRING_OBJ  = "CHUỖI"
 
-	RETURN_VALUE_OBJ = "GIÁ_TRỊ_TRẢ_VỀ"
+	RETURN_VALUE_OBJ    = "GIÁ_TRỊ_TRẢ_VỀ"
+	BREAK_SIGNAL_OBJ    = "TÍN_HIỆU_NGẮT"
+	CONTINUE_SIGNAL_OBJ = "TÍN_HIỆU_TIẾP"
 
 	FUNCTION_OBJ = "HÀM"
 	BUILTIN_OBJ  = "CÓ_SẴN"
@@ -82,6 +84,18 @@ type ReturnValue struct {
 
 func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
 func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
+
+type BreakSignal struct {
+}
+
+func (rv *BreakSignal) Type() ObjectType { return BREAK_SIGNAL_OBJ }
+func (rv *BreakSignal) Inspect() string  { return "ngắt" }
+
+type ContinueSignal struct {
+}
+
+func (rv *ContinueSignal) Type() ObjectType { return CONTINUE_SIGNAL_OBJ }
+func (rv *ContinueSignal) Inspect() string  { return "ngắt" }
 
 type Error struct {
 	Message string

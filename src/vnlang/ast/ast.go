@@ -2,8 +2,8 @@ package ast
 
 import (
 	"bytes"
-	"vnlang/token"
 	"strings"
+	"vnlang/token"
 )
 
 // The base Node interface
@@ -91,6 +91,22 @@ func (rs *ReturnStatement) String() string {
 
 	return out.String()
 }
+
+type BreakStatement struct {
+	Token token.Token // the 'ngắt' token
+}
+
+func (rs *BreakStatement) statementNode()       {}
+func (rs *BreakStatement) TokenLiteral() string { return rs.Token.Literal }
+func (rs *BreakStatement) String() string       { return rs.Token.Literal }
+
+type ContinueStatement struct {
+	Token token.Token // the 'tiếp' token
+}
+
+func (rs *ContinueStatement) statementNode()       {}
+func (rs *ContinueStatement) TokenLiteral() string { return rs.Token.Literal }
+func (rs *ContinueStatement) String() string       { return rs.Token.Literal }
 
 type ExpressionStatement struct {
 	Token      token.Token // the first token of the expression
@@ -212,6 +228,25 @@ func (ie *IfExpression) String() string {
 		out.WriteString("ngược_lại ")
 		out.WriteString(ie.Alternative.String())
 	}
+
+	return out.String()
+}
+
+type LoopExpression struct {
+	Token     token.Token // The 'lặp' token
+	Condition Expression
+	Body      *BlockStatement
+}
+
+func (ie *LoopExpression) expressionNode()      {}
+func (ie *LoopExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *LoopExpression) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("lặp ")
+	out.WriteString(ie.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Body.String())
 
 	return out.String()
 }

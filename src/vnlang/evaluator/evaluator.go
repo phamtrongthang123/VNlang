@@ -32,6 +32,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return &object.ReturnValue{Value: val}
 
+	case *ast.BreakStatement:
+		return &object.BreakSignal{}
+
+	case *ast.ContinueStatement:
+		return &object.ContinueSignal{}
+
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if isError(val) {
@@ -71,6 +77,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
+
+	case *ast.LoopExpression:
+		return evalLoopExpression(node, env)
 
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
@@ -130,7 +139,12 @@ func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 			return result.Value
 		case *object.Error:
 			return result
+		case *object.BreakSignal:
+			return newError("Không thể 'ngắt' ngoài vòng lặp")
+		case *object.ContinueSignal:
+			return newError("Không thể 'tiếp' ngoài vòng lặp")
 		}
+
 	}
 
 	return result
@@ -147,7 +161,7 @@ func evalBlockStatement(
 
 		if result != nil {
 			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+			if rt == object.RETURN_VALUE_OBJ || rt == object.BREAK_SIGNAL_OBJ || rt == object.CONTINUE_SIGNAL_OBJ || rt == object.ERROR_OBJ {
 				return result
 			}
 		}
@@ -280,6 +294,40 @@ func evalIfExpression(
 	}
 }
 
+func evalLoopExpression(
+	ie *ast.LoopExpression,
+	env *object.Environment,
+) object.Object {
+
+	var result object.Object
+
+	for {
+		condition := Eval(ie.Condition, env)
+		if isError(condition) {
+			return condition
+		}
+
+		if !isTruthy(condition) {
+			break
+		}
+
+		result = Eval(ie.Body, env)
+
+		if result != nil {
+			rt := result.Type()
+			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+				return result
+			}
+
+			if rt == object.BREAK_SIGNAL_OBJ {
+				break
+			}
+		}
+	}
+
+	return unwrapLoopSignal(result)
+}
+
 func evalIdentifier(
 	node *ast.Identifier,
 	env *object.Environment,
@@ -342,6 +390,10 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	case *object.Function:
 		extendedEnv := extendFunctionEnv(fn, args)
 		evaluated := Eval(fn.Body, extendedEnv)
+		if evaluated.Type() == object.BREAK_SIGNAL_OBJ || evaluated.Type() == object.CONTINUE_SIGNAL_OBJ {
+			return newError("không thể ngắt/tiếp ngoài vòng lặp")
+		}
+
 		return unwrapReturnValue(evaluated)
 
 	case *object.Builtin:
@@ -371,6 +423,17 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	}
 
 	return obj
+}
+
+func unwrapLoopSignal(obj object.Object) object.Object {
+	switch obj.(type) {
+	case *object.BreakSignal:
+		return nil
+	case *object.ContinueSignal:
+		return nil
+	default:
+		return obj
+	}
 }
 
 func evalIndexExpression(left, index object.Object) object.Object {

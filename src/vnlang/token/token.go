@@ -45,6 +45,10 @@ const (
 	IF       = "NẾU"
 	ELSE     = "NGƯỢC_LẠI"
 	RETURN   = "TRẢ_VỀ"
+
+	LOOP     = "LẶP"
+	BREAK    = "NGẮT"
+	CONTINUE = "TIẾP"
 )
 
 type Token struct {
@@ -60,6 +64,9 @@ var keywords = map[string]TokenType{
 	"nếu":       IF,
 	"ngược_lại": ELSE,
 	"trả_về":    RETURN,
+	"lặp":       LOOP,
+	"ngắt":      BREAK,
+	"tiếp":      CONTINUE,
 }
 
 func LookupIdent(ident string) TokenType {
