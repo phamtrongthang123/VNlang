@@ -23,6 +23,11 @@ Các tính năng chính:
 
 Trước mắt là phải sử dụng qua repl, do chưa phát triển dịch từ script file.
 
+```
+cd src
+go run .\vnlang\main.go
+```
+
 Một số mẫu sử dụng:
 
 ```
