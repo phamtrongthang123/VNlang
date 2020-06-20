@@ -1,8 +1,11 @@
 # VNlang
-Là ngôn ngữ lập trình với syntax là tiếng việt. Cách hoạt động sẽ gần giống python.
+
+Là ngôn ngữ lập trình với syntax là tiếng Việt. Được phát triển dựa trên ngôn ngữ Monkey từ quyển **Writing An Interpreter In Go**.
 
 ## Description
+
 Các tính năng chính:
+
 - C-like syntax
 - variable bindings
 - integers and booleans
@@ -16,11 +19,50 @@ Các tính năng chính:
 
 ## Installation
 
-
 ## Usage
 
+Trước mắt là phải sử dụng qua repl, do chưa phát triển dịch từ script file.
 
+Một số mẫu sử dụng:
 
+```
+>> đặt a = [1,2,323,4]
+>> độ_dài(a)
+4
+>> đầu(a)
+1
+>> a[3]
+4
+>> a[2]
+323
+```
+
+```
+>> đặt chuỗi = "asdasdsad"
+>> chuỗi[1]
+LỖI: toán tử chỉ mục không hỗ trợ cho: STRING
+>> in_ra(chuỗi)
+asdasdsad
+null
+>> đặt c2 = "test here"
+>> chuỗi + " " + c2
+asdasdsad test here
+```
+
+```
+>> đặt fi = hàm(b) { nếu (b==0){trả_về 0;} ngược_lại { nếu (b==1) {trả_về 1;} ngược_lại {trả_về fi(b-1) + fi(b-2); } } }
+>> fi
+hàm (b) {
+nếu (b == 0) trả_về 0; ngược_lại nếu (b == 1) trả_về 1; ngược_lại trả_về (fi((b - 1)) + fi((b - 2)));
+}
+>> fi(1)
+1
+>> fi(4)
+3
+>> fi(9)
+34
+```
 
 ## License
+
 [MIT](https://choosealicense.com/licenses/mit/)
