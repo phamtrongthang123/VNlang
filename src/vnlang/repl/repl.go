@@ -1,10 +1,8 @@
 package repl
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"strings"
 	"vnlang/evaluator"
 	"vnlang/lexer"
 	"vnlang/object"
@@ -14,21 +12,15 @@ import (
 const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
-	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
+
+	l := lexer.New(in)
+	p := parser.New(l)
 
 	for {
 		fmt.Printf(PROMPT)
-		scanned := scanner.Scan()
-		if !scanned {
-			return
-		}
 
-		line := scanner.Text()
-		l := lexer.New(strings.NewReader(line))
-		p := parser.New(l)
-
-		program := p.ParseProgram()
+		program := p.ParseOneStatementProgram()
 		if len(p.Errors()) != 0 {
 			printParserErrors(out, p.Errors())
 			continue

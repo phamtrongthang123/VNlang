@@ -3,13 +3,11 @@ package lexer
 import (
 	"io"
 	"text/scanner"
-
 	"vnlang/token"
 )
 
 type Lexer struct {
-	s scanner.Scanner
-
+	s    scanner.Scanner
 	curr rune
 }
 
@@ -17,13 +15,13 @@ func New(in io.Reader) *Lexer {
 	var s scanner.Scanner
 	s.Init(in)
 	l := &Lexer{s: s}
-	l.readRune()
 	return l
 }
 
 func (l *Lexer) NextToken() token.Token {
 	var t token.Token
 
+	l.readRune()
 	switch l.curr {
 	case '=':
 		t = l.either('=', token.EQ, token.ASSIGN)
@@ -40,7 +38,7 @@ func (l *Lexer) NextToken() token.Token {
 	case '>':
 		t = l.token(token.GT)
 	case '<':
-		t = l.token(token.LT)	
+		t = l.token(token.LT)
 	case ';':
 		t = l.token(token.SEMICOLON)
 	case ',':
@@ -94,8 +92,6 @@ func (l *Lexer) NextToken() token.Token {
 		lit := l.s.TokenText()
 		t = token.Token{Type: token.ILLEGAL, Literal: lit}
 	}
-
-	l.readRune()
 	return t
 }
 

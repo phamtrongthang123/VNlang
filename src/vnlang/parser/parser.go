@@ -85,15 +85,26 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 
 	// Read two tokens, so curToken and peekToken are both set
-	p.nextToken()
-	p.nextToken()
-
+	p.curToken = token.GetNullToken()
+	p.peekToken = token.GetNullToken()
 	return p
 }
 
+func (p *Parser) needPeekToken() {
+	if p.peekToken.Type == token.NULL {
+		p.peekToken = p.l.NextToken()
+	}
+}
+
 func (p *Parser) nextToken() {
+	p.needPeekToken()
 	p.curToken = p.peekToken
-	p.peekToken = p.l.NextToken()
+	p.peekToken = token.GetNullToken()
+}
+
+func (p *Parser) peekTokenType() token.TokenType {
+	p.needPeekToken()
+	return p.peekToken.Type
 }
 
 func (p *Parser) curTokenIs(t token.TokenType) bool {
@@ -101,7 +112,7 @@ func (p *Parser) curTokenIs(t token.TokenType) bool {
 }
 
 func (p *Parser) peekTokenIs(t token.TokenType) bool {
-	return p.peekToken.Type == t
+	return p.peekTokenType() == t
 }
 
 func (p *Parser) expectPeek(t token.TokenType) bool {
@@ -121,7 +132,7 @@ func (p *Parser) Errors() []string {
 func (p *Parser) peekError(t token.TokenType) {
 	// expected next token is .. , got ...
 	msg := fmt.Sprintf("kỳ vọng thẻ kế tiếp là %s, nhưng lại nhận %s",
-		t, p.peekToken.Type)
+		t, p.peekTokenType())
 	p.errors = append(p.errors, msg)
 }
 
@@ -130,16 +141,35 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 	p.errors = append(p.errors, msg)
 }
 
-func (p *Parser) ParseProgram() *ast.Program {
+func (p *Parser) ParseOneStatementProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
-	for !p.curTokenIs(token.EOF) {
+	p.nextToken()
+	if !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
 		}
+	}
+
+	return program
+}
+
+func (p *Parser) ParseProgram() *ast.Program {
+	program := &ast.Program{}
+	program.Statements = []ast.Statement{}
+
+	for {
 		p.nextToken()
+		if p.curTokenIs(token.EOF) {
+			break
+		}
+
+		stmt := p.parseStatement()
+		if stmt != nil {
+			program.Statements = append(program.Statements, stmt)
+		}
 	}
 
 	return program
@@ -236,7 +266,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	leftExp := prefix()
 
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
-		infix := p.infixParseFns[p.peekToken.Type]
+		infix := p.infixParseFns[p.peekTokenType()]
 		if infix == nil {
 			return leftExp
 		}
@@ -250,7 +280,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 }
 
 func (p *Parser) peekPrecedence() int {
-	if p, ok := precedences[p.peekToken.Type]; ok {
+	if p, ok := precedences[p.peekTokenType()]; ok {
 		return p
 	}
 
