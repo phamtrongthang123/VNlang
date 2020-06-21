@@ -175,6 +175,10 @@ func (p *Parser) ParseOneStatementProgram() *ast.Program {
 		}
 	}
 
+	if p.curTokenIs(token.EOF) && len(program.Statements) == 0 {
+		return nil
+	}
+
 	return program
 }
 

@@ -21,6 +21,11 @@ func Start(in io.Reader, out io.Writer) {
 		fmt.Printf(PROMPT)
 
 		program := p.ParseOneStatementProgram()
+
+		if program == nil {
+			break
+		}
+
 		if len(p.Errors()) != 0 {
 			printParserErrors(out, p.Errors())
 			p.ClearErrors()
