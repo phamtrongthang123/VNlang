@@ -3,6 +3,7 @@ package token
 type TokenType string
 
 const (
+	NULL    = "RỖNG"
 	ILLEGAL = "KHÔNG_HỢP_LỆ"
 	EOF     = "EOF"
 
@@ -29,6 +30,7 @@ const (
 	COMMA     = ","
 	SEMICOLON = ";"
 	COLON     = ":"
+	NEWLINE   = "\n"
 
 	LPAREN   = "("
 	RPAREN   = ")"
@@ -67,6 +69,13 @@ var keywords = map[string]TokenType{
 	"lặp":       LOOP,
 	"ngắt":      BREAK,
 	"tiếp":      CONTINUE,
+}
+
+func GetNullToken() Token {
+	return Token{
+		Type:    NULL,
+		Literal: "",
+	}
 }
 
 func LookupIdent(ident string) TokenType {
