@@ -390,8 +390,10 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	case *object.Function:
 		extendedEnv := extendFunctionEnv(fn, args)
 		evaluated := Eval(fn.Body, extendedEnv)
-		if evaluated.Type() == object.BREAK_SIGNAL_OBJ || evaluated.Type() == object.CONTINUE_SIGNAL_OBJ {
-			return newError("không thể ngắt/tiếp ngoài vòng lặp")
+		if evaluated != nil {
+			if evaluated.Type() == object.BREAK_SIGNAL_OBJ || evaluated.Type() == object.CONTINUE_SIGNAL_OBJ {
+				return newError("không thể ngắt/tiếp ngoài vòng lặp")
+			}
 		}
 
 		return unwrapReturnValue(evaluated)

@@ -23,6 +23,7 @@ func Start(in io.Reader, out io.Writer) {
 		program := p.ParseOneStatementProgram()
 		if len(p.Errors()) != 0 {
 			printParserErrors(out, p.Errors())
+			p.ClearErrors()
 			continue
 		}
 

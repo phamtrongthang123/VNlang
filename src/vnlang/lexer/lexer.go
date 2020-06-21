@@ -2,7 +2,7 @@ package lexer
 
 import (
 	"io"
-	"text/scanner"
+	"vnlang/scanner"
 	"vnlang/token"
 )
 
@@ -14,6 +14,8 @@ type Lexer struct {
 func New(in io.Reader) *Lexer {
 	var s scanner.Scanner
 	s.Init(in)
+	s.Whitespace ^= 1 << '\n' // don't skip new lines
+
 	l := &Lexer{s: s}
 	return l
 }
@@ -57,6 +59,8 @@ func (l *Lexer) NextToken() token.Token {
 		t = l.token(token.LBRACE)
 	case '}':
 		t = l.token(token.RBRACE)
+	case '\n':
+		t = l.token(token.NEWLINE)
 	case scanner.Ident:
 		// p := l.s.Pos()
 		lit := l.s.TokenText()

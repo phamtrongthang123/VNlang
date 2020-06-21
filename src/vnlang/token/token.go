@@ -30,6 +30,7 @@ const (
 	COMMA     = ","
 	SEMICOLON = ";"
 	COLON     = ":"
+	NEWLINE   = "\n"
 
 	LPAREN   = "("
 	RPAREN   = ")"
