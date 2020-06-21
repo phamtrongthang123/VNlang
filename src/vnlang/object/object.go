@@ -60,7 +60,13 @@ type Boolean struct {
 }
 
 func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
-func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
+func (b *Boolean) Inspect() string {
+	if b.Value {
+		return "đúng"
+	} else {
+		return "sai"
+	}
+}
 func (b *Boolean) HashKey() HashKey {
 	var value uint64
 
@@ -76,7 +82,7 @@ func (b *Boolean) HashKey() HashKey {
 type Null struct{}
 
 func (n *Null) Type() ObjectType { return NULL_OBJ }
-func (n *Null) Inspect() string  { return "null" }
+func (n *Null) Inspect() string  { return "rỗng" }
 
 type ReturnValue struct {
 	Value Object
