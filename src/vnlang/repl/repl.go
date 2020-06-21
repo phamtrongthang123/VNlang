@@ -3,6 +3,8 @@ package repl
 import (
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"vnlang/evaluator"
 	"vnlang/lexer"
 	"vnlang/object"
@@ -11,7 +13,21 @@ import (
 
 const PROMPT = ">> "
 
+func SetupInterrupt() {
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, os.Interrupt)
+	go func() {
+		for s := range signalChannel {
+			switch s {
+			case os.Interrupt:
+				evaluator.Interrupt()
+			}
+		}
+	}()
+}
+
 func Start(in io.Reader, out io.Writer) {
+	SetupInterrupt()
 	env := object.NewEnvironment()
 
 	l := lexer.New(in)
@@ -32,6 +48,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
+		evaluator.ResetInterrupt()
 		evaluated := evaluator.Eval(program, env)
 		if evaluated != nil {
 			io.WriteString(out, evaluated.Inspect())

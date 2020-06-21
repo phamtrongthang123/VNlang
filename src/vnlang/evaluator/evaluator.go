@@ -12,7 +12,22 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
+var interrupt = false
+
+func Interrupt() {
+	interrupt = true
+}
+
+func ResetInterrupt() {
+	interrupt = false
+}
+
 func Eval(node ast.Node, env *object.Environment) object.Object {
+	if interrupt {
+		ResetInterrupt()
+		return newError("Tiến trình bị ngắt")
+	}
+
 	switch node := node.(type) {
 
 	// Statements
