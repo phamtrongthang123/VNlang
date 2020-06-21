@@ -2,9 +2,9 @@ package lexer
 
 import (
 	"fmt"
-	"vnlang/token"
 	"strings"
 	"testing"
+	"vnlang/token"
 )
 
 // At line 9 of this code, I put it */ instead /* because /* will trigger comment
@@ -129,8 +129,14 @@ nếu (5 < 10) {
 
 	l := New(strings.NewReader(input))
 
+	var tok token.Token
 	for i, tt := range tests {
-		tok := l.NextToken()
+		for {
+			tok = l.NextToken()
+			if tok.Type != token.NEWLINE {
+				break
+			}
+		}
 		fmt.Printf("*** %q *** \n", tok.Type)
 		if tok.Type != tt.expectedType {
 			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q",
