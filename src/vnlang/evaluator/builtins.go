@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"fmt"
+	"os"
 	"vnlang/object"
 )
 
@@ -129,6 +130,24 @@ var builtins = map[string]*object.Builtin{
 			newElements[length] = args[1]
 
 			return &object.Array{Elements: newElements}
+		},
+	},
+	"thoát": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) > 1 {
+				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 0 hoặc 1",
+					len(args))
+			}
+			if len(args) > 0 && args[0].Type() != object.INTEGER_OBJ {
+				return newError("Tham số là một số nguyên (exit code). Nhận được %s",
+					args[0].Type())
+			}
+			exitCode := 0
+			if len(args) > 0 {
+				exitCode = int(args[0].(*object.Integer).Value)
+			}
+			os.Exit(exitCode)
+			return NULL
 		},
 	},
 }
