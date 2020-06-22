@@ -168,11 +168,11 @@ func TestErrorHandling(t *testing.T) {
 	}{
 		{
 			"5 + đúng;",
-			"kiểu không giống nhau: SỐ_NGUYÊN + BOOLEAN",
+			"kiểu không tương thích: SỐ_NGUYÊN + BOOLEAN",
 		},
 		{
 			"5 + đúng; 5;",
-			"kiểu không giống nhau: SỐ_NGUYÊN + BOOLEAN",
+			"kiểu không tương thích: SỐ_NGUYÊN + BOOLEAN",
 		},
 		{
 			"-đúng",

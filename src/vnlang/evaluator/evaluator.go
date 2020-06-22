@@ -217,7 +217,7 @@ func evalInfixExpression(
 	case operator == "!=":
 		return nativeBoolToBooleanObject(left != right)
 	case left.Type() != right.Type():
-		return newError("kiểu không giống nhau: %s %s %s",
+		return newError("kiểu không tương thích: %s %s %s",
 			left.Type(), operator, right.Type())
 	default:
 		return newError("toán tử lạ: %s %s %s",
