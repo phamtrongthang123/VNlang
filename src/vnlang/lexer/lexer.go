@@ -37,12 +37,16 @@ func (l *Lexer) NextToken() token.Token {
 		t = l.token(token.SLASH)
 	case '%':
 		t = l.token(token.MOD)
+	case '&':
+		t = l.either('&', token.AND, token.ILLEGAL)
+	case '|':
+		t = l.either('|', token.OR, token.ILLEGAL)
 	case '!':
 		t = l.either('=', token.NOT_EQ, token.BANG)
 	case '>':
-		t = l.token(token.GT)
+		t = l.either('=', token.GE, token.GT)
 	case '<':
-		t = l.token(token.LT)
+		t = l.either('=', token.LE, token.LT)
 	case ';':
 		t = l.token(token.SEMICOLON)
 	case ',':
