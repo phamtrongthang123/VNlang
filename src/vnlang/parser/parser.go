@@ -211,6 +211,8 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
+	case token.SEMICOLON:
+		return nil
 	case token.LET:
 		return p.parseLetStatement()
 	case token.RETURN:
@@ -219,7 +221,6 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseBreakStatement()
 	case token.CONTINUE:
 		return p.parseContinueStatement()
-
 	default:
 		return p.parseExpressionStatement()
 	}

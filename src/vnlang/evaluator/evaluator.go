@@ -372,6 +372,10 @@ func evalIdentifier(
 		return builtin
 	}
 
+	if node.Value == importKeyword {
+		return &object.Import{Env: env}
+	}
+
 	return newError("không tìm thấy tên định danh: " + node.Value)
 }
 
@@ -432,7 +436,9 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 	case *object.Builtin:
 		return fn.Fn(args...)
+	case *object.Import:
 
+		return ImportFile(fn, args...)
 	default:
 		return newError("không phải là một hàm: %s", fn.Type())
 	}

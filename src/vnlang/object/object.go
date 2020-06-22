@@ -26,6 +26,7 @@ const (
 
 	FUNCTION_OBJ = "HÀM"
 	BUILTIN_OBJ  = "CÓ_SẴN"
+	IMPORT_OBJ   = "SỬ_DỤNG"
 
 	ARRAY_OBJ = "MẢNG"
 	HASH_OBJ  = "BĂM"
@@ -154,6 +155,13 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string  { return "hàm có sẵn" }
+
+type Import struct {
+	Env *Environment
+}
+
+func (b *Import) Type() ObjectType { return IMPORT_OBJ }
+func (b *Import) Inspect() string  { return "sử dụng" }
 
 type Array struct {
 	Elements []Object
