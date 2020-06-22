@@ -425,7 +425,7 @@ func TestScanNext(t *testing.T) {
 	checkTok(t, s, 0, s.Next(), '=', "")
 	checkTok(t, s, 2, s.Scan(), Ident, "c")
 	checkTok(t, s, 3, s.Scan(), '}', "}")
-	//checkTok(t, s, 3, s.Scan(), BOM, BOMs)
+	checkTok(t, s, 3, s.Scan(), BOM, BOMs)
 	checkTok(t, s, 3, s.Scan(), -1, "")
 	if s.ErrorCount != 0 {
 		t.Errorf("%d errors", s.ErrorCount)

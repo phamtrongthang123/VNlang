@@ -319,7 +319,7 @@ func (s *Scanner) Peek() rune {
 	if s.ch == -2 {
 		// this code is only run for the very first character
 		s.ch = s.next()
-		if s.ch == '\uFEFF' {
+		if s.ch == '\uFEFF' && s.srcBufOffset+s.srcPos == s.lastCharLen {
 			s.ch = s.next() // ignore BOM
 		}
 	}

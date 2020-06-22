@@ -168,11 +168,11 @@ func TestErrorHandling(t *testing.T) {
 	}{
 		{
 			"5 + đúng;",
-			"kiểu không giống nhau: SỐ_NGUYÊN + BOOLEAN",
+			"kiểu không tương thích: SỐ_NGUYÊN + BOOLEAN",
 		},
 		{
 			"5 + đúng; 5;",
-			"kiểu không giống nhau: SỐ_NGUYÊN + BOOLEAN",
+			"kiểu không tương thích: SỐ_NGUYÊN + BOOLEAN",
 		},
 		{
 			"-đúng",
@@ -192,7 +192,7 @@ func TestErrorHandling(t *testing.T) {
 		},
 		{
 			`"Hello" - "World"`,
-			"toán tử lạ: CHUỖI - CHUỖI",
+			"toán tử lạ: XÂU - XÂU",
 		},
 		{
 			"nếu (10 > 1) { đúng + sai; }",
@@ -378,8 +378,8 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`đuôi(1)`, "Tham số truyền vào hàm lấy `đuôi` của mảng phải thuộc kiểu Mảng. Nhận được kiểu SỐ_NGUYÊN"},
 		{`trừ_đầu([1, 2, 3])`, []int{2, 3}},
 		{`trừ_đầu([])`, nil},
-		{`ép([], 1)`, []int{1}},
-		{`ép(1, 1)`, "Tham số truyền vào hàm lấy `ép` của mảng phải thuộc kiểu Mảng. Nhận được kiểu SỐ_NGUYÊN"},
+		{`đẩy([], 1)`, []int{1}},
+		{`đẩy(1, 1)`, "Tham số truyền vào hàm lấy `đẩy` của mảng phải thuộc kiểu Mảng. Nhận được kiểu SỐ_NGUYÊN"},
 	}
 
 	for _, tt := range tests {
