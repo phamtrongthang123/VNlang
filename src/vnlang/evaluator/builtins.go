@@ -7,7 +7,7 @@ import (
 
 var builtins = map[string]*object.Builtin{
 	// len
-	"độ_dài": &object.Builtin{Fn: func(args ...object.Object) object.Object {
+	"độ_dài": {Fn: func(args ...object.Object) object.Object {
 		if len(args) != 1 {
 			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 				len(args))
@@ -24,18 +24,29 @@ var builtins = map[string]*object.Builtin{
 		}
 	},
 	},
+	// string() // convert object to string
+	"xâu": {Fn: func(args ...object.Object) object.Object {
+		if len(args) != 1 {
+			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+				len(args))
+		}
+
+		return &object.String{Value: args[0].Inspect()}
+	},
+	},
 	// puts
-	"in_ra": &object.Builtin{
+	"in_ra": {
 		Fn: func(args ...object.Object) object.Object {
 			for _, arg := range args {
-				fmt.Println(arg.Inspect())
+				fmt.Print(arg.Inspect(), " ")
 			}
+			fmt.Println()
 
 			return NULL
 		},
 	},
 	//first
-	"đầu": &object.Builtin{
+	"đầu": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
@@ -55,7 +66,7 @@ var builtins = map[string]*object.Builtin{
 		},
 	},
 	// last
-	"đuôi": &object.Builtin{
+	"đuôi": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
@@ -76,7 +87,7 @@ var builtins = map[string]*object.Builtin{
 		},
 	},
 	// rest, rest returns a new array containing all elements of the array passed as argument, except the `first one`.
-	"trừ_đầu": &object.Builtin{
+	"trừ_đầu": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
@@ -99,14 +110,14 @@ var builtins = map[string]*object.Builtin{
 		},
 	},
 	// push
-	"ép": &object.Builtin{
+	"đẩy": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 2",
 					len(args))
 			}
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("Tham số truyền vào hàm lấy `ép` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
+				return newError("Tham số truyền vào hàm lấy `đẩy` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 

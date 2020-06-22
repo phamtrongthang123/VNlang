@@ -29,6 +29,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.MOD:      PRODUCT,
 	token.LPAREN:   CALL,
 	token.LBRACKET: INDEX,
 }
@@ -47,6 +48,8 @@ type Parser struct {
 
 	prefixParseFns map[token.TokenType]prefixParseFn
 	infixParseFns  map[token.TokenType]infixParseFn
+
+	indentLevel int
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -65,7 +68,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
-	p.registerPrefix(token.LOOP, p.parseLoopExpression)
+	p.registerPrefix(token.WHILE, p.parseWhileExpression)
 
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
@@ -75,6 +78,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
 	p.registerInfix(token.SLASH, p.parseInfixExpression)
+	p.registerInfix(token.MOD, p.parseInfixExpression)
 	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
@@ -96,9 +100,13 @@ func (p *Parser) consumeSemicolon() {
 	}
 }
 
+func (p *Parser) nextSingleToken() token.Token {
+	return p.l.NextToken()
+}
+
 func (p *Parser) needPeekToken() {
 	for p.peekToken.Type == token.NULL || p.peekToken.Type == token.NEWLINE {
-		p.peekToken = p.l.NextToken()
+		p.peekToken = p.nextSingleToken()
 	}
 }
 
@@ -111,7 +119,7 @@ func (p *Parser) nextToken() {
 // Only use this when you want to get a new line token
 func (p *Parser) nextTokenNL() {
 	if p.peekToken.Type == token.NULL {
-		p.peekToken = p.l.NextToken()
+		p.peekToken = p.nextSingleToken()
 	}
 	p.curToken = p.peekToken
 	p.peekToken = token.GetNullToken()
@@ -407,8 +415,8 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	return expression
 }
 
-func (p *Parser) parseLoopExpression() ast.Expression {
-	expression := &ast.LoopExpression{Token: p.curToken}
+func (p *Parser) parseWhileExpression() ast.Expression {
+	expression := &ast.WhileExpression{Token: p.curToken}
 
 	if !p.expectPeek(token.LPAREN) {
 		return nil
@@ -431,6 +439,8 @@ func (p *Parser) parseLoopExpression() ast.Expression {
 }
 
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	p.indentLevel += 1
+
 	block := &ast.BlockStatement{Token: p.curToken}
 	block.Statements = []ast.Statement{}
 
@@ -443,6 +453,8 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		}
 		p.nextToken()
 	}
+
+	p.indentLevel -= 1
 
 	return block
 }

@@ -93,8 +93,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
 
-	case *ast.LoopExpression:
-		return evalLoopExpression(node, env)
+	case *ast.WhileExpression:
+		return evalWhileExpression(node, env)
 
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
@@ -263,6 +263,8 @@ func evalIntegerInfixExpression(
 		return &object.Integer{Value: leftVal * rightVal}
 	case "/":
 		return &object.Integer{Value: leftVal / rightVal}
+	case "%":
+		return &object.Integer{Value: leftVal % rightVal}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
@@ -281,14 +283,25 @@ func evalStringInfixExpression(
 	operator string,
 	left, right object.Object,
 ) object.Object {
-	if operator != "+" {
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+
+	switch operator {
+	case "+":
+		return &object.String{Value: leftVal + rightVal}
+	case "==":
+		return &object.Boolean{Value: leftVal == rightVal}
+	case "!=":
+		return &object.Boolean{Value: leftVal != rightVal}
+	case "<":
+		return &object.Boolean{Value: leftVal < rightVal}
+	case ">":
+		return &object.Boolean{Value: leftVal > rightVal}
+	default:
 		return newError("toán tử lạ: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
 
-	leftVal := left.(*object.String).Value
-	rightVal := right.(*object.String).Value
-	return &object.String{Value: leftVal + rightVal}
 }
 
 func evalIfExpression(
@@ -309,8 +322,8 @@ func evalIfExpression(
 	}
 }
 
-func evalLoopExpression(
-	ie *ast.LoopExpression,
+func evalWhileExpression(
+	ie *ast.WhileExpression,
 	env *object.Environment,
 ) object.Object {
 
@@ -340,7 +353,7 @@ func evalLoopExpression(
 		}
 	}
 
-	return unwrapLoopSignal(result)
+	return unwrapWhileSignal(result)
 }
 
 func evalIdentifier(
@@ -442,7 +455,7 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	return obj
 }
 
-func unwrapLoopSignal(obj object.Object) object.Object {
+func unwrapWhileSignal(obj object.Object) object.Object {
 	switch obj.(type) {
 	case *object.BreakSignal:
 		return nil

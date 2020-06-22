@@ -45,7 +45,7 @@ Một số mẫu sử dụng:
 ```
 >> đặt chuỗi = "asdasdsad"
 >> chuỗi[1]
-LỖI: toán tử chỉ mục không hỗ trợ cho: CHUỖI
+LỖI: toán tử chỉ mục không hỗ trợ cho: XÂU
 >> in_ra(chuỗi)
 asdasdsad
 null

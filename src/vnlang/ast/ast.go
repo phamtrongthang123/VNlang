@@ -232,18 +232,18 @@ func (ie *IfExpression) String() string {
 	return out.String()
 }
 
-type LoopExpression struct {
-	Token     token.Token // The 'lặp' token
+type WhileExpression struct {
+	Token     token.Token // The 'khi' token
 	Condition Expression
 	Body      *BlockStatement
 }
 
-func (ie *LoopExpression) expressionNode()      {}
-func (ie *LoopExpression) TokenLiteral() string { return ie.Token.Literal }
-func (ie *LoopExpression) String() string {
+func (ie *WhileExpression) expressionNode()      {}
+func (ie *WhileExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *WhileExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("lặp ")
+	out.WriteString("khi ")
 	out.WriteString(ie.Condition.String())
 	out.WriteString(" ")
 	out.WriteString(ie.Body.String())

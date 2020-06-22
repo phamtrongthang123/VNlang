@@ -35,6 +35,8 @@ func (l *Lexer) NextToken() token.Token {
 		t = l.token(token.ASTERISK)
 	case '/':
 		t = l.token(token.SLASH)
+	case '%':
+		t = l.token(token.MOD)
 	case '!':
 		t = l.either('=', token.NOT_EQ, token.BANG)
 	case '>':

@@ -10,7 +10,7 @@ const (
 	// Identifiers + literals
 	IDENT  = "ĐỊNH_DANH" // add, foobar, x, y, ...
 	INT    = "SỐ_NGUYÊN" // 1343456
-	STRING = "CHUỖI"     // "foobar"
+	STRING = "XÂU"       // "foobar"
 
 	// Operators
 	ASSIGN   = "="
@@ -19,6 +19,7 @@ const (
 	BANG     = "!"
 	ASTERISK = "*"
 	SLASH    = "/"
+	MOD      = "%"
 
 	LT = "<"
 	GT = ">"
@@ -48,7 +49,7 @@ const (
 	ELSE     = "NGƯỢC_LẠI"
 	RETURN   = "TRẢ_VỀ"
 
-	LOOP     = "LẶP"
+	WHILE    = "KHI"
 	BREAK    = "NGẮT"
 	CONTINUE = "TIẾP"
 )
@@ -66,7 +67,7 @@ var keywords = map[string]TokenType{
 	"nếu":       IF,
 	"ngược_lại": ELSE,
 	"trả_về":    RETURN,
-	"lặp":       LOOP,
+	"khi":       WHILE,
 	"ngắt":      BREAK,
 	"tiếp":      CONTINUE,
 }
