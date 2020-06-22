@@ -427,19 +427,19 @@ func TestIfExpression(t *testing.T) {
 			stmt.Expression)
 	}
 
-	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+	if !testInfixExpression(t, exp.Condition[0], "x", "<", "y") {
 		return
 	}
 
-	if len(exp.Consequence.Statements) != 1 {
+	if len(exp.Consequence[0].Statements) != 1 {
 		t.Errorf("consequence is not 1 statements. got=%d\n",
-			len(exp.Consequence.Statements))
+			len(exp.Consequence[0].Statements))
 	}
 
-	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	consequence, ok := exp.Consequence[0].Statements[0].(*ast.ExpressionStatement)
 	if !ok {
 		t.Fatalf("Statements[0] is not ast.ExpressionStatement. got=%T",
-			exp.Consequence.Statements[0])
+			exp.Consequence[0].Statements[0])
 	}
 
 	if !testIdentifier(t, consequence.Expression, "x") {
@@ -475,19 +475,19 @@ func TestIfElseExpression(t *testing.T) {
 		t.Fatalf("stmt.Expression is not ast.IfExpression. got=%T", stmt.Expression)
 	}
 
-	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+	if !testInfixExpression(t, exp.Condition[0], "x", "<", "y") {
 		return
 	}
 
-	if len(exp.Consequence.Statements) != 1 {
+	if len(exp.Consequence[0].Statements) != 1 {
 		t.Errorf("consequence is not 1 statements. got=%d\n",
-			len(exp.Consequence.Statements))
+			len(exp.Consequence[0].Statements))
 	}
 
-	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	consequence, ok := exp.Consequence[0].Statements[0].(*ast.ExpressionStatement)
 	if !ok {
 		t.Fatalf("Statements[0] is not ast.ExpressionStatement. got=%T",
-			exp.Consequence.Statements[0])
+			exp.Consequence[0].Statements[0])
 	}
 
 	if !testIdentifier(t, consequence.Expression, "x") {

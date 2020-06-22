@@ -46,6 +46,7 @@ const (
 	TRUE     = "ĐÚNG"
 	FALSE    = "SAI"
 	IF       = "NẾU"
+	ELSEIF   = "CÒN_NẾU"
 	ELSE     = "NGƯỢC_LẠI"
 	RETURN   = "TRẢ_VỀ"
 
@@ -65,6 +66,7 @@ var keywords = map[string]TokenType{
 	"đúng":      TRUE,
 	"sai":       FALSE,
 	"nếu":       IF,
+	"còn_nếu":   ELSEIF,
 	"ngược_lại": ELSE,
 	"trả_về":    RETURN,
 	"khi":       WHILE,

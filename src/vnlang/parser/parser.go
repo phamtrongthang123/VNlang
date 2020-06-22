@@ -211,6 +211,8 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
+	case token.SEMICOLON:
+		return nil
 	case token.LET:
 		return p.parseLetStatement()
 	case token.RETURN:
@@ -219,7 +221,6 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseBreakStatement()
 	case token.CONTINUE:
 		return p.parseContinueStatement()
-
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -385,22 +386,28 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 func (p *Parser) parseIfExpression() ast.Expression {
 	expression := &ast.IfExpression{Token: p.curToken}
 
-	if !p.expectPeek(token.LPAREN) {
-		return nil
+	for {
+		if !p.expectPeek(token.LPAREN) {
+			return nil
+		}
+		p.nextToken()
+		expression.Condition = append(expression.Condition, p.parseExpression(LOWEST))
+
+		if !p.expectPeek(token.RPAREN) {
+			return nil
+		}
+
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+
+		expression.Consequence = append(expression.Consequence, p.parseBlockStatement())
+
+		if !p.peekTokenIs(token.ELSEIF) {
+			break
+		}
+		p.nextToken()
 	}
-
-	p.nextToken()
-	expression.Condition = p.parseExpression(LOWEST)
-
-	if !p.expectPeek(token.RPAREN) {
-		return nil
-	}
-
-	if !p.expectPeek(token.LBRACE) {
-		return nil
-	}
-
-	expression.Consequence = p.parseBlockStatement()
 
 	if p.peekTokenIs(token.ELSE) {
 		p.nextToken()

@@ -209,8 +209,8 @@ func (oe *InfixExpression) String() string {
 
 type IfExpression struct {
 	Token       token.Token // The 'if' token
-	Condition   Expression
-	Consequence *BlockStatement
+	Condition   []Expression
+	Consequence []*BlockStatement
 	Alternative *BlockStatement
 }
 
@@ -220,9 +220,16 @@ func (ie *IfExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("nếu ")
-	out.WriteString(ie.Condition.String())
+	out.WriteString(ie.Condition[0].String())
 	out.WriteString(" ")
-	out.WriteString(ie.Consequence.String())
+	out.WriteString(ie.Consequence[0].String())
+
+	for i := range ie.Condition[1:] {
+		out.WriteString("còn_nếu ")
+		out.WriteString(ie.Condition[i].String())
+		out.WriteString(" ")
+		out.WriteString(ie.Consequence[i].String())
+	}
 
 	if ie.Alternative != nil {
 		out.WriteString("ngược_lại ")
