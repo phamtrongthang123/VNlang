@@ -1,10 +1,11 @@
 package evaluator
 
 import (
+	"strings"
+	"testing"
 	"vnlang/lexer"
 	"vnlang/object"
 	"vnlang/parser"
-	"testing"
 )
 
 func TestEvalIntegerExpression(t *testing.T) {
@@ -40,8 +41,8 @@ func TestEvalBooleanExpression(t *testing.T) {
 		input    string
 		expected bool
 	}{
-		{"true", true},
-		{"false", false},
+		{"đúng", true},
+		{"sai", false},
 		{"1 < 2", true},
 		{"1 > 2", false},
 		{"1 < 1", false},
@@ -50,15 +51,15 @@ func TestEvalBooleanExpression(t *testing.T) {
 		{"1 != 1", false},
 		{"1 == 2", false},
 		{"1 != 2", true},
-		{"true == true", true},
-		{"false == false", true},
-		{"true == false", false},
-		{"true != false", true},
-		{"false != true", true},
-		{"(1 < 2) == true", true},
-		{"(1 < 2) == false", false},
-		{"(1 > 2) == true", false},
-		{"(1 > 2) == false", true},
+		{"đúng == đúng", true},
+		{"sai == sai", true},
+		{"đúng == sai", false},
+		{"đúng != sai", true},
+		{"sai != đúng", true},
+		{"(1 < 2) == đúng", true},
+		{"(1 < 2) == sai", false},
+		{"(1 > 2) == đúng", false},
+		{"(1 > 2) == sai", true},
 	}
 
 	for _, tt := range tests {
@@ -72,11 +73,11 @@ func TestBangOperator(t *testing.T) {
 		input    string
 		expected bool
 	}{
-		{"!true", false},
-		{"!false", true},
+		{"!đúng", false},
+		{"!sai", true},
 		{"!5", false},
-		{"!!true", true},
-		{"!!false", false},
+		{"!!đúng", true},
+		{"!!sai", false},
 		{"!!5", true},
 	}
 
@@ -91,13 +92,13 @@ func TestIfElseExpressions(t *testing.T) {
 		input    string
 		expected interface{}
 	}{
-		{"if (true) { 10 }", 10},
-		{"if (false) { 10 }", nil},
-		{"if (1) { 10 }", 10},
-		{"if (1 < 2) { 10 }", 10},
-		{"if (1 > 2) { 10 }", nil},
-		{"if (1 > 2) { 10 } else { 20 }", 20},
-		{"if (1 < 2) { 10 } else { 20 }", 10},
+		{"nếu (đúng) { 10 }", 10},
+		{"nếu (sai) { 10 }", nil},
+		{"nếu (1) { 10 }", 10},
+		{"nếu (1 < 2) { 10 }", 10},
+		{"nếu (1 > 2) { 10 }", nil},
+		{"nếu (1 > 2) { 10 } ngược_lại { 20 }", 20},
+		{"nếu (1 < 2) { 10 } ngược_lại { 20 }", 10},
 	}
 
 	for _, tt := range tests {
@@ -116,27 +117,27 @@ func TestReturnStatements(t *testing.T) {
 		input    string
 		expected int64
 	}{
-		{"return 10;", 10},
-		{"return 10; 9;", 10},
-		{"return 2 * 5; 9;", 10},
-		{"9; return 2 * 5; 9;", 10},
-		{"if (10 > 1) { return 10; }", 10},
+		{"trả_về 10;", 10},
+		{"trả_về 10; 9;", 10},
+		{"trả_về 2 * 5; 9;", 10},
+		{"9; trả_về 2 * 5; 9;", 10},
+		{"nếu (10 > 1) { trả_về 10; }", 10},
 		{
 			`
-if (10 > 1) {
-  if (10 > 1) {
-    return 10;
+nếu (10 > 1) {
+  nếu (10 > 1) {
+    trả_về 10;
   }
 
-  return 1;
+  trả_về 1;
 }
 `,
 			10,
 		},
 		{
 			`
-let f = fn(x) {
-  return x;
+đặt f = hàm(x) {
+  trả_về x;
   x + 10;
 };
 f(10);`,
@@ -144,10 +145,10 @@ f(10);`,
 		},
 		{
 			`
-let f = fn(x) {
-   let result = x + 10;
-   return result;
-   return 10;
+đặt f = hàm(x) {
+   đặt kết_quả = x + 10;
+   trả_về kết_quả;
+   trả_về 10;
 };
 f(10);`,
 			20,
@@ -166,60 +167,60 @@ func TestErrorHandling(t *testing.T) {
 		expectedMessage string
 	}{
 		{
-			"5 + true;",
-			"type mismatch: INTEGER + BOOLEAN",
+			"5 + đúng;",
+			"kiểu không giống nhau: SỐ_NGUYÊN + BOOLEAN",
 		},
 		{
-			"5 + true; 5;",
-			"type mismatch: INTEGER + BOOLEAN",
+			"5 + đúng; 5;",
+			"kiểu không giống nhau: SỐ_NGUYÊN + BOOLEAN",
 		},
 		{
-			"-true",
-			"unknown operator: -BOOLEAN",
+			"-đúng",
+			"toán tử lạ: -BOOLEAN",
 		},
 		{
-			"true + false;",
-			"unknown operator: BOOLEAN + BOOLEAN",
+			"đúng + sai;",
+			"toán tử lạ: BOOLEAN + BOOLEAN",
 		},
 		{
-			"true + false + true + false;",
-			"unknown operator: BOOLEAN + BOOLEAN",
+			"đúng + sai + đúng + sai;",
+			"toán tử lạ: BOOLEAN + BOOLEAN",
 		},
 		{
-			"5; true + false; 5",
-			"unknown operator: BOOLEAN + BOOLEAN",
+			"5; đúng + sai; 5",
+			"toán tử lạ: BOOLEAN + BOOLEAN",
 		},
 		{
 			`"Hello" - "World"`,
-			"unknown operator: STRING - STRING",
+			"toán tử lạ: CHUỖI - CHUỖI",
 		},
 		{
-			"if (10 > 1) { true + false; }",
-			"unknown operator: BOOLEAN + BOOLEAN",
+			"nếu (10 > 1) { đúng + sai; }",
+			"toán tử lạ: BOOLEAN + BOOLEAN",
 		},
 		{
 			`
-if (10 > 1) {
-  if (10 > 1) {
-    return true + false;
+nếu (10 > 1) {
+  nếu (10 > 1) {
+    trả_về đúng + sai;
   }
 
-  return 1;
+  trả_về 1;
 }
 `,
-			"unknown operator: BOOLEAN + BOOLEAN",
+			"toán tử lạ: BOOLEAN + BOOLEAN",
 		},
 		{
 			"foobar",
-			"identifier not found: foobar",
+			"không tìm thấy tên định danh: foobar",
 		},
 		{
-			`{"name": "Monkey"}[fn(x) { x }];`,
-			"unusable as hash key: FUNCTION",
+			`{"name": "Monkey"}[hàm(x) { x }];`,
+			"không thể dùng như khóa băm: HÀM",
 		},
 		{
 			`999[1]`,
-			"index operator not supported: INTEGER",
+			"toán tử chỉ mục không hỗ trợ cho: SỐ_NGUYÊN",
 		},
 	}
 
@@ -245,10 +246,10 @@ func TestLetStatements(t *testing.T) {
 		input    string
 		expected int64
 	}{
-		{"let a = 5; a;", 5},
-		{"let a = 5 * 5; a;", 25},
-		{"let a = 5; let b = a; b;", 5},
-		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+		{"đặt a = 5; a;", 5},
+		{"đặt a = 5 * 5; a;", 25},
+		{"đặt a = 5; đặt b = a; b;", 5},
+		{"đặt a = 5; đặt b = a; đặt c = a + b + 5; c;", 15},
 	}
 
 	for _, tt := range tests {
@@ -257,7 +258,7 @@ func TestLetStatements(t *testing.T) {
 }
 
 func TestFunctionObject(t *testing.T) {
-	input := "fn(x) { x + 2; };"
+	input := "hàm(x) { x + 2; };"
 
 	evaluated := testEval(input)
 	fn, ok := evaluated.(*object.Function)
@@ -274,7 +275,7 @@ func TestFunctionObject(t *testing.T) {
 		t.Fatalf("parameter is not 'x'. got=%q", fn.Parameters[0])
 	}
 
-	expectedBody := "(x + 2)"
+	expectedBody := "(x + 2) "
 
 	if fn.Body.String() != expectedBody {
 		t.Fatalf("body is not %q. got=%q", expectedBody, fn.Body.String())
@@ -286,12 +287,12 @@ func TestFunctionApplication(t *testing.T) {
 		input    string
 		expected int64
 	}{
-		{"let identity = fn(x) { x; }; identity(5);", 5},
-		{"let identity = fn(x) { return x; }; identity(5);", 5},
-		{"let double = fn(x) { x * 2; }; double(5);", 10},
-		{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
-		{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
-		{"fn(x) { x; }(5)", 5},
+		{"đặt identity = hàm(x) { x; }; identity(5);", 5},
+		{"đặt identity = hàm(x) { trả_về x; }; identity(5);", 5},
+		{"đặt double = hàm(x) { x * 2; }; double(5);", 10},
+		{"đặt add = hàm(x, y) { x + y; }; add(5, 5);", 10},
+		{"đặt add = hàm(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+		{"hàm(x) { x; }(5)", 5},
 	}
 
 	for _, tt := range tests {
@@ -301,12 +302,12 @@ func TestFunctionApplication(t *testing.T) {
 
 func TestEnclosingEnvironments(t *testing.T) {
 	input := `
-let first = 10;
-let second = 10;
-let third = 10;
+đặt first = 10;
+đặt second = 10;
+đặt third = 10;
 
-let ourFunction = fn(first) {
-  let second = 20;
+đặt ourFunction = hàm(first) {
+  đặt second = 20;
 
   first + second + third;
 };
@@ -318,11 +319,11 @@ ourFunction(20) + first + second;`
 
 func TestClosures(t *testing.T) {
 	input := `
-let newAdder = fn(x) {
-  fn(y) { x + y };
+đặt newAdder = hàm(x) {
+  hàm(y) { x + y };
 };
 
-let addTwo = newAdder(2);
+đặt addTwo = newAdder(2);
 addTwo(2);`
 
 	testIntegerObject(t, testEval(input), 4)
@@ -361,24 +362,24 @@ func TestBuiltinFunctions(t *testing.T) {
 		input    string
 		expected interface{}
 	}{
-		{`len("")`, 0},
-		{`len("four")`, 4},
-		{`len("hello world")`, 11},
-		{`len(1)`, "argument to `len` not supported, got INTEGER"},
-		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
-		{`len([1, 2, 3])`, 3},
-		{`len([])`, 0},
-		{`puts("hello", "world!")`, nil},
-		{`first([1, 2, 3])`, 1},
-		{`first([])`, nil},
-		{`first(1)`, "argument to `first` must be ARRAY, got INTEGER"},
-		{`last([1, 2, 3])`, 3},
-		{`last([])`, nil},
-		{`last(1)`, "argument to `last` must be ARRAY, got INTEGER"},
-		{`rest([1, 2, 3])`, []int{2, 3}},
-		{`rest([])`, nil},
-		{`push([], 1)`, []int{1}},
-		{`push(1, 1)`, "argument to `push` must be ARRAY, got INTEGER"},
+		{`độ_dài("")`, 0},
+		{`độ_dài("four")`, 4},
+		{`độ_dài("hello world")`, 11},
+		{`độ_dài(1)`, "Tham số truyền vào `độ_dài` không được hỗ trợ lấy độ dài (chỉ có Mảng hoặc Chuỗi được hỗ trợ), kiểu tham số SỐ_NGUYÊN."},
+		{`độ_dài("one", "two")`, "Sai số lượng tham số truyền vào. nhận được = 2, mong muốn = 1"},
+		{`độ_dài([1, 2, 3])`, 3},
+		{`độ_dài([])`, 0},
+		{`in_ra("hello", "world!")`, nil},
+		{`đầu([1, 2, 3])`, 1},
+		{`đầu([])`, nil},
+		{`đầu(1)`, "Tham số truyền vào hàm lấy `đầu` của mảng phải thuộc kiểu Mảng. Nhận được kiểu SỐ_NGUYÊN"},
+		{`đuôi([1, 2, 3])`, 3},
+		{`đuôi([])`, nil},
+		{`đuôi(1)`, "Tham số truyền vào hàm lấy `đuôi` của mảng phải thuộc kiểu Mảng. Nhận được kiểu SỐ_NGUYÊN"},
+		{`trừ_đầu([1, 2, 3])`, []int{2, 3}},
+		{`trừ_đầu([])`, nil},
+		{`ép([], 1)`, []int{1}},
+		{`ép(1, 1)`, "Tham số truyền vào hàm lấy `ép` của mảng phải thuộc kiểu Mảng. Nhận được kiểu SỐ_NGUYÊN"},
 	}
 
 	for _, tt := range tests {
@@ -457,7 +458,7 @@ func TestArrayIndexExpressions(t *testing.T) {
 			3,
 		},
 		{
-			"let i = 0; [1][i];",
+			"đặt i = 0; [1][i];",
 			1,
 		},
 		{
@@ -465,15 +466,15 @@ func TestArrayIndexExpressions(t *testing.T) {
 			3,
 		},
 		{
-			"let myArray = [1, 2, 3]; myArray[2];",
+			"đặt myArray = [1, 2, 3]; myArray[2];",
 			3,
 		},
 		{
-			"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+			"đặt myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
 			6,
 		},
 		{
-			"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+			"đặt myArray = [1, 2, 3]; đặt i = myArray[0]; myArray[i]",
 			2,
 		},
 		{
@@ -498,14 +499,14 @@ func TestArrayIndexExpressions(t *testing.T) {
 }
 
 func TestHashLiterals(t *testing.T) {
-	input := `let two = "two";
+	input := `đặt two = "two";
 	{
 		"one": 10 - 9,
 		two: 1 + 1,
 		"thr" + "ee": 6 / 2,
 		4: 4,
-		true: 5,
-		false: 6
+		đúng: 5,
+		sai: 6
 	}`
 
 	evaluated := testEval(input)
@@ -551,7 +552,7 @@ func TestHashIndexExpressions(t *testing.T) {
 			nil,
 		},
 		{
-			`let key = "foo"; {"foo": 5}[key]`,
+			`đặt key = "foo"; {"foo": 5}[key]`,
 			5,
 		},
 		{
@@ -563,11 +564,11 @@ func TestHashIndexExpressions(t *testing.T) {
 			5,
 		},
 		{
-			`{true: 5}[true]`,
+			`{đúng: 5}[đúng]`,
 			5,
 		},
 		{
-			`{false: 5}[false]`,
+			`{sai: 5}[sai]`,
 			5,
 		},
 	}
@@ -583,7 +584,7 @@ func TestHashIndexExpressions(t *testing.T) {
 	}
 }
 func testEval(input string) object.Object {
-	l := lexer.New(input)
+	l := lexer.New(strings.NewReader(input))
 	p := parser.New(l)
 	program := p.ParseProgram()
 	env := object.NewEnvironment()
