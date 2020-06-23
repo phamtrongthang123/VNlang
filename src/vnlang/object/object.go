@@ -18,6 +18,7 @@ const (
 	ERROR_OBJ = "LỖI"
 
 	INTEGER_OBJ = "SỐ_NGUYÊN"
+	FLOAT_OBJ   = "SỐ_THỰC"
 	BOOLEAN_OBJ = "BOOLEAN"
 	STRING_OBJ  = "XÂU"
 
@@ -64,6 +65,13 @@ func (i *Integer) HashKey() HashKey {
 	h.Write([]byte{sign})
 	return HashKey{Type: i.Type(), Value: h.Sum64()}
 }
+
+type Float struct {
+	Value float64
+}
+
+func (i *Float) Type() ObjectType { return FLOAT_OBJ }
+func (i *Float) Inspect() string  { return fmt.Sprintf("%f", i.Value) }
 
 type Boolean struct {
 	Value bool

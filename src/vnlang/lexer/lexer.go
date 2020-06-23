@@ -80,11 +80,17 @@ func (l *Lexer) NextToken() token.Token {
 			Type:    token.LookupIdent(lit),
 			Literal: lit,
 		}
-	case scanner.Int, scanner.Float:
+	case scanner.Int:
 		// p := l.s.Pos()
 		lit := l.s.TokenText()
 		t = token.Token{
 			Type:    token.INT,
+			Literal: lit,
+		}
+	case scanner.Float:
+		lit := l.s.TokenText()
+		t = token.Token{
+			Type:    token.FLOAT,
 			Literal: lit,
 		}
 	case scanner.String:
