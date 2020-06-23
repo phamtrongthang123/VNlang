@@ -207,24 +207,31 @@ func evalInfixExpression(
 	operator string,
 	left, right object.Object,
 ) object.Object {
-	switch {
-	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
-		return evalIntegerInfixExpression(operator, left, right)
-	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
-		return evalStringInfixExpression(operator, left, right)
-	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
-		return evalBooleanInfixExpression(operator, left, right)
-	case operator == "==":
-		return nativeBoolToBooleanObject(left == right)
-	case operator == "!=":
-		return nativeBoolToBooleanObject(left != right)
-	case left.Type() != right.Type():
-		return newError("kiểu không tương thích: %s %s %s",
-			left.Type(), operator, right.Type())
-	default:
-		return newError("toán tử lạ: %s %s %s",
-			left.Type(), operator, right.Type())
+	leftType := left.Type()
+	rightType := right.Type()
+
+	if leftType != rightType {
+		return newError("kiểu không tương thích: %s %s %s", leftType, operator, rightType)
 	}
+
+	switch leftType {
+	case object.INTEGER_OBJ:
+		return evalIntegerInfixExpression(operator, left, right)
+	case object.STRING_OBJ:
+		return evalStringInfixExpression(operator, left, right)
+	case object.BOOLEAN_OBJ:
+		return evalBooleanInfixExpression(operator, left, right)
+	}
+
+	switch operator {
+	case "==":
+		return nativeBoolToBooleanObject(left == right)
+	case "!=":
+		return nativeBoolToBooleanObject(left != right)
+	}
+
+	return newError("toán tử lạ: %s %s %s",
+		leftType, operator, rightType)
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
@@ -241,12 +248,13 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 }
 
 func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
-	if right.Type() != object.INTEGER_OBJ {
+	value, ok := right.(*object.Integer)
+
+	if !ok {
 		return newError("toán tử lạ: -%s", right.Type())
 	}
 
-	value := right.(*object.Integer).Value
-	return &object.Integer{Value: -value}
+	return &object.Integer{Value: -value.Value}
 }
 
 func evalIntegerInfixExpression(
@@ -430,10 +438,8 @@ func newError(format string, a ...interface{}) *object.Error {
 }
 
 func isError(obj object.Object) bool {
-	if obj != nil {
-		return obj.Type() == object.ERROR_OBJ
-	}
-	return false
+	_, ok := obj.(*object.Error)
+	return ok
 }
 
 func evalExpressions(
@@ -459,10 +465,12 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	case *object.Function:
 		extendedEnv := extendFunctionEnv(fn, args)
 		evaluated := Eval(fn.Body, extendedEnv)
-		if evaluated != nil {
-			if evaluated.Type() == object.BREAK_SIGNAL_OBJ || evaluated.Type() == object.CONTINUE_SIGNAL_OBJ {
-				return newError("không thể ngắt/tiếp ngoài vòng lặp")
-			}
+		switch evaluated.(type) {
+		case *object.BreakSignal:
+			return newError("không thể ngắt ngoài vòng lặp")
+		case *object.ContinueSignal:
+			return newError("không thể ngắt tiếptiếp vòng lặp")
+
 		}
 
 		return unwrapReturnValue(evaluated)
