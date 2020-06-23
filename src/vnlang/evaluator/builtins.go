@@ -26,6 +26,44 @@ var builtins = map[string]*object.Builtin{
 		}
 	},
 	},
+	// convert big int to float
+	"thực": {Fn: func(args ...object.Object) object.Object {
+		if len(args) != 1 {
+			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+				len(args))
+		}
+
+		switch val := args[0].(type) {
+		case *object.Float:
+			return val
+		case *object.Integer:
+			valFloat, _ := new(big.Float).SetInt(val.Value).Float64()
+			return &object.Float{Value: valFloat}
+		default:
+			return newError("Tham số truyền vào `thực` phải là số nguyên hoặc số thực, kiểu tham số %s.",
+				args[0].Type())
+		}
+	},
+	},
+	"nguyên": {Fn: func(args ...object.Object) object.Object {
+		if len(args) != 1 {
+			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+				len(args))
+		}
+
+		switch val := args[0].(type) {
+		case *object.Float:
+			valInt := new(big.Int)
+			big.NewFloat(val.Value).Int(valInt)
+			return &object.Integer{Value: valInt}
+		case *object.Integer:
+			return val
+		default:
+			return newError("Tham số truyền vào `nguyên` phải là số nguyên hoặc số thực, kiểu tham số %s.",
+				args[0].Type())
+		}
+	},
+	},
 	// string() // convert object to string
 	"xâu": {Fn: func(args ...object.Object) object.Object {
 		if len(args) != 1 {
