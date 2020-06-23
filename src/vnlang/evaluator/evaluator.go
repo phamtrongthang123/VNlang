@@ -65,6 +65,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 
+	case *ast.FloatLiteral:
+		return &object.Float{Value: node.Value}
+
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
 
@@ -218,6 +221,8 @@ func evalInfixExpression(
 	switch leftType {
 	case object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
+	case object.FLOAT_OBJ:
+		return evalFloatInfixExpression(operator, left, right)
 	case object.STRING_OBJ:
 		return evalStringInfixExpression(operator, left, right)
 	case object.BOOLEAN_OBJ:
@@ -250,9 +255,13 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 
 func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	value, ok := right.(*object.Integer)
-
+	
 	if !ok {
-		return newError("toán tử lạ: -%s", right.Type())
+		if right.Type() != object.FLOAT_OBJ {
+			return newError("toán tử lạ: -%s", right.Type())
+		}
+		value:= right.(*object.Float).Value			
+		return &object.Float{Value: -value}
 	}
 
 	var newValue big.Int
@@ -298,6 +307,40 @@ func evalIntegerInfixExpression(
 			left.Type(), operator, right.Type())
 	}
 	return &object.Integer{Value: &resVal}
+}
+
+func evalFloatInfixExpression(
+	operator string,
+	left, right object.Object,
+) object.Object {
+	leftVal := left.(*object.Float).Value
+	rightVal := right.(*object.Float).Value
+
+	switch operator {
+	case "<":
+		return nativeBoolToBooleanObject(leftVal < rightVal)
+	case ">":
+		return nativeBoolToBooleanObject(leftVal > rightVal)
+	case "<=":
+		return nativeBoolToBooleanObject(leftVal <= rightVal)
+	case ">=":
+		return nativeBoolToBooleanObject(leftVal >= rightVal)
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)	
+	case "+":
+		return &object.Float{Value: leftVal + rightVal}
+	case "-":
+		return &object.Float{Value: leftVal - rightVal}
+	case "*":
+		return &object.Float{Value: leftVal * rightVal}
+	case "/":
+		return &object.Float{Value: leftVal / rightVal}
+	default:
+		return newError("toán tử lạ: %s %s %s",
+			left.Type(), operator, right.Type())
+	}
 }
 
 func evalStringInfixExpression(

@@ -11,6 +11,7 @@ const (
 	IDENT  = "ĐỊNH_DANH" // add, foobar, x, y, ...
 	INT    = "SỐ_NGUYÊN" // 1343456
 	STRING = "XÂU"       // "foobar"
+	FLOAT  = "SỐ_THỰC"   // "3.14"
 
 	// Operators
 	ASSIGN   = "="
