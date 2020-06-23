@@ -131,7 +131,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	if !ok {
 		t.Fatalf("exp not *ast.IntegerLiteral. got=%T", stmt.Expression)
 	}
-	if literal.Value != 5 {
+	if literal.Value.IsInt64() && literal.Value.Int64() != 5 {
 		t.Errorf("literal.Value not %d. got=%d", 5, literal.Value)
 	}
 	if literal.TokenLiteral() != "5" {
@@ -1013,7 +1013,7 @@ func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
 		return false
 	}
 
-	if integ.Value != value {
+	if integ.Value.IsInt64() && integ.Value.Int64() != value {
 		t.Errorf("integ.Value not %d. got=%d", value, integ.Value)
 		return false
 	}

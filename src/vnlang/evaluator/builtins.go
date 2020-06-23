@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 	"vnlang/object"
 )
@@ -16,9 +17,9 @@ var builtins = map[string]*object.Builtin{
 
 		switch arg := args[0].(type) {
 		case *object.Array:
-			return &object.Integer{Value: int64(len(arg.Elements))}
+			return &object.Integer{Value: big.NewInt(int64(len(arg.Elements)))}
 		case *object.String:
-			return &object.Integer{Value: int64(len(arg.Value))}
+			return &object.Integer{Value: big.NewInt(int64(len(arg.Value)))}
 		default:
 			return newError("Tham số truyền vào `độ_dài` không được hỗ trợ lấy độ dài (chỉ có Mảng hoặc Chuỗi được hỗ trợ), kiểu tham số %s.",
 				args[0].Type())
@@ -144,7 +145,10 @@ var builtins = map[string]*object.Builtin{
 			}
 			exitCode := 0
 			if len(args) > 0 {
-				exitCode = int(args[0].(*object.Integer).Value)
+				exitCodeBig := args[0].(*object.Integer).Value
+				if exitCodeBig.IsInt64() {
+					exitCode = int(args[0].(*object.Integer).Value.Int64())
+				}
 			}
 			os.Exit(exitCode)
 			return NULL

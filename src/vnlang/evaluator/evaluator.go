@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"fmt"
+	"math/big"
 	"vnlang/ast"
 	"vnlang/object"
 )
@@ -254,7 +255,9 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 		return newError("toán tử lạ: -%s", right.Type())
 	}
 
-	return &object.Integer{Value: -value.Value}
+	var newValue big.Int
+	newValue.Neg(value.Value)
+	return &object.Integer{Value: &newValue}
 }
 
 func evalIntegerInfixExpression(
@@ -265,32 +268,36 @@ func evalIntegerInfixExpression(
 	rightVal := right.(*object.Integer).Value
 
 	switch operator {
-	case "+":
-		return &object.Integer{Value: leftVal + rightVal}
-	case "-":
-		return &object.Integer{Value: leftVal - rightVal}
-	case "*":
-		return &object.Integer{Value: leftVal * rightVal}
-	case "/":
-		return &object.Integer{Value: leftVal / rightVal}
-	case "%":
-		return &object.Integer{Value: leftVal % rightVal}
 	case "<":
-		return nativeBoolToBooleanObject(leftVal < rightVal)
+		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) < 0)
 	case ">":
-		return nativeBoolToBooleanObject(leftVal > rightVal)
+		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) > 0)
 	case "<=":
-		return nativeBoolToBooleanObject(leftVal <= rightVal)
+		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) <= 0)
 	case ">=":
-		return nativeBoolToBooleanObject(leftVal >= rightVal)
+		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) >= 0)
 	case "==":
-		return nativeBoolToBooleanObject(leftVal == rightVal)
+		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) == 0)
 	case "!=":
-		return nativeBoolToBooleanObject(leftVal != rightVal)
+		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) != 0)
+	}
+	var resVal big.Int
+	switch operator {
+	case "+":
+		resVal.Add(leftVal, rightVal)
+	case "-":
+		resVal.Sub(leftVal, rightVal)
+	case "*":
+		resVal.Mul(leftVal, rightVal)
+	case "/":
+		resVal.Div(leftVal, rightVal)
+	case "%":
+		resVal.Mod(leftVal, rightVal)
 	default:
 		return newError("toán tử lạ: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
+	return &object.Integer{Value: &resVal}
 }
 
 func evalStringInfixExpression(
@@ -530,7 +537,12 @@ func evalIndexExpression(left, index object.Object) object.Object {
 
 func evalArrayIndexExpression(array, index object.Object) object.Object {
 	arrayObject := array.(*object.Array)
-	idx := index.(*object.Integer).Value
+	idxBig := index.(*object.Integer).Value
+	if !idxBig.IsInt64() {
+		return NULL
+	}
+
+	idx := idxBig.Int64()
 	max := int64(len(arrayObject.Elements) - 1)
 
 	if idx < 0 || idx > max {

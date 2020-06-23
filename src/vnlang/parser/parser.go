@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"strconv"
+	"math/big"
 	"vnlang/ast"
 	"vnlang/lexer"
 	"vnlang/token"
@@ -345,18 +345,16 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
-	lit := &ast.IntegerLiteral{Token: p.curToken}
+	var value big.Int
+	_, ok := value.SetString(p.curToken.Literal, 0)
 
-	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
-	if err != nil {
+	if !ok {
 		msg := fmt.Sprintf("không thể phân giải %q như số nguyên", p.curToken.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}
 
-	lit.Value = value
-
-	return lit
+	return &ast.IntegerLiteral{Token: p.curToken, Value: &value}
 }
 
 func (p *Parser) parseStringLiteral() ast.Expression {

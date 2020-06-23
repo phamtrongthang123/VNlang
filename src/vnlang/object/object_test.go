@@ -1,6 +1,9 @@
 package object
 
-import "testing"
+import (
+	"math/big"
+	"testing"
+)
 
 func TestStringHashKey(t *testing.T) {
 	hello1 := &String{Value: "Hello World"}
@@ -41,10 +44,10 @@ func TestBooleanHashKey(t *testing.T) {
 }
 
 func TestIntegerHashKey(t *testing.T) {
-	one1 := &Integer{Value: 1}
-	one2 := &Integer{Value: 1}
-	two1 := &Integer{Value: 2}
-	two2 := &Integer{Value: 2}
+	one1 := &Integer{Value: big.NewInt(1)}
+	one2 := &Integer{Value: big.NewInt(1)}
+	two1 := &Integer{Value: big.NewInt(2)}
+	two2 := &Integer{Value: big.NewInt(2)}
 
 	if one1.HashKey() != one2.HashKey() {
 		t.Errorf("integers with same content have twoerent hash keys")
