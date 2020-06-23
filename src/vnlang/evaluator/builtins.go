@@ -2,6 +2,8 @@ package evaluator
 
 import (
 	"fmt"
+	"math/big"
+	"os"
 	"vnlang/object"
 )
 
@@ -15,9 +17,9 @@ var builtins = map[string]*object.Builtin{
 
 		switch arg := args[0].(type) {
 		case *object.Array:
-			return &object.Integer{Value: int64(len(arg.Elements))}
+			return &object.Integer{Value: big.NewInt(int64(len(arg.Elements)))}
 		case *object.String:
-			return &object.Integer{Value: int64(len(arg.Value))}
+			return &object.Integer{Value: big.NewInt(int64(len(arg.Value)))}
 		default:
 			return newError("Tham số truyền vào `độ_dài` không được hỗ trợ lấy độ dài (chỉ có Mảng hoặc Chuỗi được hỗ trợ), kiểu tham số %s.",
 				args[0].Type())
@@ -129,6 +131,27 @@ var builtins = map[string]*object.Builtin{
 			newElements[length] = args[1]
 
 			return &object.Array{Elements: newElements}
+		},
+	},
+	"thoát": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) > 1 {
+				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 0 hoặc 1",
+					len(args))
+			}
+			if len(args) > 0 && args[0].Type() != object.INTEGER_OBJ {
+				return newError("Tham số là một số nguyên (exit code). Nhận được %s",
+					args[0].Type())
+			}
+			exitCode := 0
+			if len(args) > 0 {
+				exitCodeBig := args[0].(*object.Integer).Value
+				if exitCodeBig.IsInt64() {
+					exitCode = int(args[0].(*object.Integer).Value.Int64())
+				}
+			}
+			os.Exit(exitCode)
+			return NULL
 		},
 	},
 }

@@ -21,8 +21,14 @@ const (
 	SLASH    = "/"
 	MOD      = "%"
 
+	AND = "&&"
+	OR  = "||"
+
 	LT = "<"
 	GT = ">"
+
+	LE = "<="
+	GE = ">="
 
 	EQ     = "=="
 	NOT_EQ = "!="

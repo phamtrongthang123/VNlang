@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
+	"math/big"
 	"strings"
 	"vnlang/ast"
 )
@@ -47,13 +48,21 @@ type Object interface {
 }
 
 type Integer struct {
-	Value int64
+	Value *big.Int
 }
 
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
-func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
+func (i *Integer) Inspect() string  { return i.Value.Text(10) }
 func (i *Integer) HashKey() HashKey {
-	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+	h := fnv.New64a()
+	data := i.Value.Bytes()
+	h.Write(data)
+	var sign byte = 0
+	if i.Value.Sign() < 0 {
+		sign = 43
+	}
+	h.Write([]byte{sign})
+	return HashKey{Type: i.Type(), Value: h.Sum64()}
 }
 
 type Boolean struct {

@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"math/big"
 	"strings"
 	"vnlang/token"
 )
@@ -160,7 +161,7 @@ func (b *Boolean) String() string       { return b.Token.Literal }
 
 type IntegerLiteral struct {
 	Token token.Token
-	Value int64
+	Value *big.Int
 }
 
 func (il *IntegerLiteral) expressionNode()      {}

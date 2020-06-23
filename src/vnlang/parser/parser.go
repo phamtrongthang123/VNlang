@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"strconv"
+	"math/big"
 	"vnlang/ast"
 	"vnlang/lexer"
 	"vnlang/token"
@@ -11,6 +11,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	LOGICAL
 	EQUALS      // ==
 	LESSGREATER // > or <
 	SUM         // +
@@ -21,10 +22,14 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.AND:      LOGICAL,
+	token.OR:       LOGICAL,
 	token.EQ:       EQUALS,
 	token.NOT_EQ:   EQUALS,
 	token.LT:       LESSGREATER,
 	token.GT:       LESSGREATER,
+	token.LE:       LESSGREATER,
+	token.GE:       LESSGREATER,
 	token.PLUS:     SUM,
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
@@ -84,6 +89,11 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LE, p.parseInfixExpression)
+	p.registerInfix(token.GE, p.parseInfixExpression)
+
+	p.registerInfix(token.AND, p.parseInfixExpression)
+	p.registerInfix(token.OR, p.parseInfixExpression)
 
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
@@ -95,13 +105,19 @@ func New(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser) consumeSemicolon() {
-	if p.peekTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
+	// if p.peekTokenIs(token.SEMICOLON) {
+	// 	p.nextToken()
+	// }
 }
 
 func (p *Parser) nextSingleToken() token.Token {
 	return p.l.NextToken()
+}
+
+func (p *Parser) needPeekTokenNL() {
+	if p.peekToken.Type == token.NULL {
+		p.peekToken = p.nextSingleToken()
+	}
 }
 
 func (p *Parser) needPeekToken() {
@@ -118,9 +134,7 @@ func (p *Parser) nextToken() {
 
 // Only use this when you want to get a new line token
 func (p *Parser) nextTokenNL() {
-	if p.peekToken.Type == token.NULL {
-		p.peekToken = p.nextSingleToken()
-	}
+	p.needPeekTokenNL()
 	p.curToken = p.peekToken
 	p.peekToken = token.GetNullToken()
 }
@@ -130,12 +144,21 @@ func (p *Parser) peekTokenType() token.TokenType {
 	return p.peekToken.Type
 }
 
+func (p *Parser) peekTokenNLType() token.TokenType {
+	p.needPeekTokenNL()
+	return p.peekToken.Type
+}
+
 func (p *Parser) curTokenIs(t token.TokenType) bool {
 	return p.curToken.Type == t
 }
 
 func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekTokenType() == t
+}
+
+func (p *Parser) peekTokenNLIs(t token.TokenType) bool {
+	return p.peekTokenNLType() == t
 }
 
 func (p *Parser) expectPeek(t token.TokenType) bool {
@@ -287,7 +310,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
-	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+	for !(p.peekTokenNLIs(token.SEMICOLON) || p.peekTokenNLIs(token.NEWLINE)) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekTokenType()]
 		if infix == nil {
 			return leftExp
@@ -322,18 +345,16 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
-	lit := &ast.IntegerLiteral{Token: p.curToken}
+	var value big.Int
+	_, ok := value.SetString(p.curToken.Literal, 0)
 
-	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
-	if err != nil {
+	if !ok {
 		msg := fmt.Sprintf("không thể phân giải %q như số nguyên", p.curToken.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}
 
-	lit.Value = value
-
-	return lit
+	return &ast.IntegerLiteral{Token: p.curToken, Value: &value}
 }
 
 func (p *Parser) parseStringLiteral() ast.Expression {
