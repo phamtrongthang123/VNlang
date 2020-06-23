@@ -28,37 +28,48 @@ func setupProfiling(file string) {
 		log.Fatal(err)
 	}
 	pprof.StartCPUProfile(f)
-	fmt.Println("Start profiling")
+	fmt.Println("Bắt đầu đo đạc")
+}
+
+func runRepl() {
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Chào người dùng %s!\n",
+		user.Username)
+	repl.Start(os.Stdin, os.Stdout)
+}
+
+func runScript(args []string) {
+	env := object.NewEnvironment()
+	env.Set("tham_số", toArgsArray(args))
+	evaluated := evaluator.RunFile(args[0], env)
+	if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
+		fmt.Println(evaluated.Inspect())
+	}
 }
 
 func main() {
-	if len(os.Args) == 1 {
-		user, err := user.Current()
-		if err != nil {
-			panic(err)
+	var i int = 1
+	for i < len(os.Args) {
+		if os.Args[i][0] != '-' {
+			break
 		}
-		fmt.Printf("Chào người dùng %s!\n",
-			user.Username)
-		repl.Start(os.Stdin, os.Stdout)
-	} else {
-		var i int = 1
-		for {
-			if os.Args[i][0] != '-' {
-				break
-			}
-			if os.Args[i] == "-profile" {
-				i++
-				setupProfiling(os.Args[i])
-				defer pprof.StopCPUProfile()
-			}
+		if os.Args[i] == "-đo_đạc" {
 			i++
+			if i >= len(os.Args) {
+				panic("Cờ -đo_đạc <file_kết_quả> cần có tham số")
+			}
+			setupProfiling(os.Args[i])
+			defer pprof.StopCPUProfile()
 		}
+		i++
+	}
 
-		env := object.NewEnvironment()
-		env.Set("tham_số", toArgsArray(os.Args[i:]))
-		evaluated := evaluator.RunFile(os.Args[i], env)
-		if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
-			fmt.Println(evaluated.Inspect())
-		}
+	if len(os.Args) <= i {
+		runRepl()
+	} else {
+		runScript(os.Args[1:])
 	}
 }
