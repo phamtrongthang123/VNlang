@@ -5,8 +5,6 @@
 ### Todo
 
 - [ ] support for
-- [ ] big int
-- [ ] float
 
 ### Doing
 
@@ -19,3 +17,5 @@
 - [X] so sánh chuỗi (==, !=, ... )
 - [X] mod operator
 - [x] support running script file
+- [x] big int
+- [x] float

@@ -11,6 +11,16 @@ func NewEnvironment() *Environment {
 	return &Environment{store: s, outer: nil}
 }
 
+func (env *Environment) Import(newEnv *Environment) {
+	if env == nil || newEnv == nil {
+		return
+	}
+	env.Import(newEnv.outer)
+	for key, val := range newEnv.store {
+		env.store[key] = val
+	}
+}
+
 type Environment struct {
 	store map[string]Object
 	outer *Environment

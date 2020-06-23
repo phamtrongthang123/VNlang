@@ -11,6 +11,17 @@ import (
 	"vnlang/repl"
 )
 
+func toArgsArray(args []string) *object.Array {
+	res := &object.Array{
+		Elements: make([]object.Object, len(args)),
+	}
+
+	for i, arg := range args {
+		res.Elements[i] = &object.String{Value: arg}
+	}
+	return res
+}
+
 func setupProfiling(file string) {
 	f, err := os.Create(file)
 	if err != nil {
@@ -30,11 +41,22 @@ func main() {
 			user.Username)
 		repl.Start(os.Stdin, os.Stdout)
 	} else {
-		if len(os.Args) >= 3 {
-			setupProfiling(os.Args[2])
-			defer pprof.StopCPUProfile()
+		var i int = 1
+		for {
+			if os.Args[i][0] != '-' {
+				break
+			}
+			if os.Args[i] == "-profile" {
+				i++
+				setupProfiling(os.Args[i])
+				defer pprof.StopCPUProfile()
+			}
+			i++
 		}
-		evaluated := evaluator.ImportFile(&object.Import{Env: object.NewEnvironment()}, &object.String{Value: os.Args[1]})
+
+		env := object.NewEnvironment()
+		env.Set("tham_số", toArgsArray(os.Args[i:]))
+		evaluated := evaluator.RunFile(os.Args[i], env)
 		if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 			fmt.Println(evaluated.Inspect())
 		}
