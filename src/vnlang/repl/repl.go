@@ -30,12 +30,13 @@ func Start(in io.Reader, out io.Writer) {
 	SetupInterrupt()
 	env := object.NewEnvironment()
 
-	l := lexer.New(in)
+	l := lexer.New(in, "")
 	p := parser.New(l)
 
 	for {
 		fmt.Printf(PROMPT)
 
+		p.ResetLineCount()
 		program := p.ParseOneStatementProgram()
 
 		if program == nil {

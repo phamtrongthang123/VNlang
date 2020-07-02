@@ -16,7 +16,7 @@ func RunFile(path string, env *object.Environment) object.Object {
 	if err != nil {
 		return &object.Error{Message: "không thể mở file"}
 	}
-	pr := parser.New(lexer.New(file))
+	pr := parser.New(lexer.New(file, file.Name()))
 	prog := pr.ParseProgram()
 	if len(pr.Errors()) != 0 {
 		errStr := bytes.NewBufferString("")

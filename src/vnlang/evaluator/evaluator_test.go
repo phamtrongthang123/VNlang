@@ -611,7 +611,7 @@ func TestHashIndexExpressions(t *testing.T) {
 	}
 }
 func testEval(input string) object.Object {
-	l := lexer.New(strings.NewReader(input))
+	l := lexer.New(strings.NewReader(input), "<test>")
 	p := parser.New(l)
 	program := p.ParseProgram()
 	env := object.NewEnvironment()
@@ -640,7 +640,7 @@ func testFloatObject(t *testing.T, obj object.Object, expected float64) bool {
 		t.Errorf("object is not Float. got=%T (%+v)", obj, obj)
 		return false
 	}
-	if !(result.Value - expected <= 1e-9) {
+	if !(result.Value-expected <= 1e-9) {
 		t.Errorf("object has wrong value. got=%f, want=%f",
 			result.Value, expected)
 		return false

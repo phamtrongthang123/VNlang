@@ -108,6 +108,10 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+func (p *Parser) ResetLineCount() {
+	p.l.ResetLineCount()
+}
+
 func (p *Parser) consumeSemicolon() {
 	// if p.peekTokenIs(token.SEMICOLON) {
 	// 	p.nextToken()
@@ -185,18 +189,18 @@ func (p *Parser) ClearErrors() {
 
 func (p *Parser) peekError(t token.TokenType) {
 	// expected next token is .. , got ...
-	msg := fmt.Sprintf("kỳ vọng thẻ kế tiếp là %s, nhưng lại nhận %s",
-		t, p.peekTokenType())
+	msg := fmt.Sprintf("%v kỳ vọng thẻ kế tiếp là %s, nhưng lại nhận %s",
+		p.l.GetPos(), t, p.peekTokenType())
 	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
-	msg := fmt.Sprintf("không tìm thấy hàm phân giải tiền tố cho %s", t)
+	msg := fmt.Sprintf("%v không tìm thấy hàm phân giải tiền tố cho %s", p.l.GetPos(), t)
 	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) hashKeyError(t ast.Expression) {
-	msg := fmt.Sprintf("đối tượng trong bảng băm không hợp lệ %s (phải là một tên định danh nếu không có khóa)", t.String())
+	msg := fmt.Sprintf("%v đối tượng trong bảng băm không hợp lệ %s (phải là một tên định danh nếu không có khóa)", p.l.GetPos(), t.String())
 	p.errors = append(p.errors, msg)
 }
 
@@ -358,7 +362,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	_, ok := value.SetString(p.curToken.Literal, 0)
 
 	if !ok {
-		msg := fmt.Sprintf("không thể phân giải %q như số nguyên", p.curToken.Literal)
+		msg := fmt.Sprintf("%v không thể phân giải %q như số nguyên", p.l.GetPos(), p.curToken.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}
@@ -371,7 +375,7 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 
 	value, err := strconv.ParseFloat(p.curToken.Literal, 64)
 	if err != nil {
-		msg := fmt.Sprintf("không thể phân giải %q như số thực", p.curToken.Literal)
+		msg := fmt.Sprintf("%v không thể phân giải %q như số thực", p.l.GetPos(), p.curToken.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}
@@ -454,11 +458,7 @@ func (p *Parser) parseIfExpression() ast.Expression {
 		p.nextToken()
 		expression.Condition = append(expression.Condition, p.parseExpression(LOWEST))
 
-		if !p.expectPeek(token.RPAREN) {
-			return nil
-		}
-
-		if !p.expectPeek(token.LBRACE) {
+		if !p.expectPeek(token.RPAREN) || !p.expectPeek(token.LBRACE) {
 			return nil
 		}
 
