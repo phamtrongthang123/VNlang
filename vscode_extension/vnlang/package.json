@@ -1,0 +1,25 @@
+{
+    "name": "vnlang",
+    "displayName": "vnlang",
+    "description": "",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.46.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "vnlang",
+            "aliases": ["vnlang", "vnlang"],
+            "extensions": [".vnl"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "vnlang",
+            "scopeName": "source.vnl",
+            "path": "./syntaxes/vnlang.tmLanguage.json"
+        }]
+    }
+}

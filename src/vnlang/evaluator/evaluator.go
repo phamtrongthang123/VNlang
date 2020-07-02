@@ -254,19 +254,16 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 }
 
 func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
-	value, ok := right.(*object.Integer)
-	
-	if !ok {
-		if right.Type() != object.FLOAT_OBJ {
-			return newError("toán tử lạ: -%s", right.Type())
-		}
-		value:= right.(*object.Float).Value			
-		return &object.Float{Value: -value}
+	switch value := right.(type) {
+	case *object.Integer:
+		var newValue big.Int
+		newValue.Neg(value.Value)
+		return &object.Integer{Value: &newValue}
+	case *object.Float:
+		return &object.Float{Value: -value.Value}
+	default:
+		return newError("toán tử lạ: -%s", right.Type())
 	}
-
-	var newValue big.Int
-	newValue.Neg(value.Value)
-	return &object.Integer{Value: &newValue}
 }
 
 func evalIntegerInfixExpression(
@@ -328,7 +325,7 @@ func evalFloatInfixExpression(
 	case "==":
 		return nativeBoolToBooleanObject(leftVal == rightVal)
 	case "!=":
-		return nativeBoolToBooleanObject(leftVal != rightVal)	
+		return nativeBoolToBooleanObject(leftVal != rightVal)
 	case "+":
 		return &object.Float{Value: leftVal + rightVal}
 	case "-":

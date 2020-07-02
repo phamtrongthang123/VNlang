@@ -38,6 +38,7 @@ var precedences = map[token.TokenType]int{
 	token.MOD:      PRODUCT,
 	token.LPAREN:   CALL,
 	token.LBRACKET: INDEX,
+	token.DOT:      INDEX,
 }
 
 type (
@@ -93,6 +94,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LE, p.parseInfixExpression)
 	p.registerInfix(token.GE, p.parseInfixExpression)
+	p.registerInfix(token.DOT, p.parseDotExpression)
 
 	p.registerInfix(token.AND, p.parseInfixExpression)
 	p.registerInfix(token.OR, p.parseInfixExpression)
@@ -190,6 +192,11 @@ func (p *Parser) peekError(t token.TokenType) {
 
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 	msg := fmt.Sprintf("không tìm thấy hàm phân giải tiền tố cho %s", t)
+	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) hashKeyError(t ast.Expression) {
+	msg := fmt.Sprintf("đối tượng trong bảng băm không hợp lệ %s (phải là một tên định danh nếu không có khóa)", t.String())
 	p.errors = append(p.errors, msg)
 }
 
@@ -405,6 +412,22 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
+	expression := &ast.IndexExpression{
+		Token: p.curToken,
+		Left:  left,
+	}
+
+	p.nextToken()
+	id := p.parseIdentifier().(*ast.Identifier)
+	expression.Index = &ast.StringLiteral{
+		Token: id.Token,
+		Value: id.Value,
+	}
+
+	return expression
+}
+
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
 }
@@ -608,13 +631,21 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		p.nextToken()
 		key := p.parseExpression(LOWEST)
 
-		if !p.expectPeek(token.COLON) {
-			return nil
+		var value ast.Expression
+		if !p.peekTokenIs(token.COLON) {
+			id, ok := key.(*ast.Identifier)
+			if !ok {
+				p.hashKeyError(key)
+				return nil
+			}
+
+			value = key
+			key = &ast.StringLiteral{Token: id.Token, Value: id.Value}
+		} else {
+			p.nextToken()
+			p.nextToken()
+			value = p.parseExpression(LOWEST)
 		}
-
-		p.nextToken()
-		value := p.parseExpression(LOWEST)
-
 		hash.Pairs[key] = value
 
 		if !p.peekTokenIs(token.RBRACE) && !p.expectPeek(token.COMMA) {

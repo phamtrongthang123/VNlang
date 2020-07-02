@@ -1,0 +1,76 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "vnlang",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#function"
+		},
+		{
+			"include": "#boolean"
+		},
+		{
+			"include": "#number"
+		},
+		{
+			"include": "#builtin"
+		},
+		{
+			"include": "#comment"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.vnlang",
+				"match": "\\b(nếu|còn_nếu|ngược_lại|khi|với|trả_về|tiếp|ngắt)\\b"
+			}]
+		},
+		"function": {
+			"patterns": [{
+				"name": "keyword.other.vnlang",
+				"match": "\\b(hàm|đặt)\\b"
+			}]
+		},
+		"number": {
+			"patterns": [{
+				"name": "constant.numeric.vnlang",
+				"match": "\\b(-?\\d[_\\d]*.?[_\\d]*|0(x[aAbBcCdDeEfF\\d_]+|[01234567_]+))\\b"
+			}]
+		},
+		"comment": {
+			"name": "comment.line.vnlang",
+			"begin": "//",
+			"end": "\n"
+		},
+		"builtin": {
+			"patterns": [{
+				"name": "support.function.vnlang",
+				"match": "\\b(sử_dụng|độ_dài|xâu|nguyên|thực|thoát|đẩy)\\b"
+			}]
+		},
+		"boolean": {
+			"patterns": [{
+				"name": "constant.language.vnlang",
+				"match": "\\b(đúng|sai|rỗng)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.vnlang",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.vnlang",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.vnl"
+}
