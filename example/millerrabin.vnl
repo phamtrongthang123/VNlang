@@ -1,0 +1,65 @@
+// Tính a ^ k chia dư cho cơ số n
+đặt mũ = hàm(a, k, n) {
+    nếu (k == 0) {
+        trả_về 1;
+    }
+
+    // Tính a ^ (k/2) mod n
+    đặt kq = mũ(a, k / 2, n)
+    đặt kq = kq * kq % n
+
+    // Nếu k lẻ
+    nếu (k % 2 == 1) {
+        đặt kq = kq * a % n
+    }
+
+    trả_về kq
+}
+
+đặt nguyên_tố = hàm(n) {
+    nếu(n < 2) {
+        trả_về sai
+    } còn_nếu (n == 2) {
+        trả_về đúng
+    }
+    // chuyển n về dạng 2^s * r + 1
+    đặt s = 0
+    đặt r = n - 1
+    
+    khi(r % 2 == 0) {
+        đặt s = s + 1
+        đặt r = r / 2
+    }
+
+    // chọn một số ngẫu nhiên
+    đặt a = 2
+
+    // tính a ^ r mod n
+    đặt k = mũ(a, r, n)
+
+    // nếu k == 1 thì bó tay
+    nếu (k == 1) {
+        trả_về đúng
+    }
+
+    // ngược lại
+    khi (k != 1) {
+        nếu (s == 0) {
+            trả_về sai
+        }
+        nếu (k == n-1) {
+            trả_về đúng
+        }
+        
+        đặt k = k * k % n
+        đặt s = s - 1
+    }
+
+    trả_về sai
+}
+
+xuất = {
+    mũ,
+    nguyên_tố,
+    abc
+}
