@@ -195,6 +195,11 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 	p.errors = append(p.errors, msg)
 }
 
+func (p *Parser) hashKeyError(t ast.Expression) {
+	msg := fmt.Sprintf("đối tượng trong bảng băm không hợp lệ %s (phải là một tên định danh nếu không có khóa)", t.String())
+	p.errors = append(p.errors, msg)
+}
+
 func (p *Parser) ParseOneStatementProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
@@ -414,10 +419,10 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 	}
 
 	p.nextToken()
-	id := p.parseIdentifier()
+	id := p.parseIdentifier().(*ast.Identifier)
 	expression.Index = &ast.StringLiteral{
-		Token: p.curToken,
-		Value: id.String(),
+		Token: id.Token,
+		Value: id.Value,
 	}
 
 	return expression
@@ -626,13 +631,21 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		p.nextToken()
 		key := p.parseExpression(LOWEST)
 
-		if !p.expectPeek(token.COLON) {
-			return nil
+		var value ast.Expression
+		if !p.peekTokenIs(token.COLON) {
+			id, ok := key.(*ast.Identifier)
+			if !ok {
+				p.hashKeyError(key)
+				return nil
+			}
+
+			value = key
+			key = &ast.StringLiteral{Token: id.Token, Value: id.Value}
+		} else {
+			p.nextToken()
+			p.nextToken()
+			value = p.parseExpression(LOWEST)
 		}
-
-		p.nextToken()
-		value := p.parseExpression(LOWEST)
-
 		hash.Pairs[key] = value
 
 		if !p.peekTokenIs(token.RBRACE) && !p.expectPeek(token.COMMA) {
