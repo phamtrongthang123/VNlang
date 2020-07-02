@@ -44,10 +44,12 @@ func ImportFile(p *object.Import, args ...object.Object) object.Object {
 		data, ok := newEnv.Get("xuất")
 		if ok {
 			return data
+		} else {
+			return NULL
 		}
 	}
 
-	return NULL
+	return evaluated
 }
 
 func printParserErrors(out io.Writer, errors []string) {

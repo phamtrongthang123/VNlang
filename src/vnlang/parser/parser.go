@@ -631,6 +631,10 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		p.nextToken()
 		key := p.parseExpression(LOWEST)
 
+		if key == nil {
+			return nil
+		}
+
 		var value ast.Expression
 		if !p.peekTokenIs(token.COLON) {
 			id, ok := key.(*ast.Identifier)
