@@ -41,10 +41,13 @@ func ImportFile(p *object.Import, args ...object.Object) object.Object {
 	newEnv := object.NewEnvironment()
 	evaluated := RunFile(path, newEnv)
 	if !isError(evaluated) {
-		p.Env.Import(newEnv)
+		data, ok := newEnv.Get("xuất")
+		if ok {
+			return data
+		}
 	}
 
-	return evaluated
+	return NULL
 }
 
 func printParserErrors(out io.Writer, errors []string) {

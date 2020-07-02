@@ -21,6 +21,7 @@ const (
 	ASTERISK = "*"
 	SLASH    = "/"
 	MOD      = "%"
+	DOT      = "."
 
 	AND = "&&"
 	OR  = "||"
