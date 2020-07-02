@@ -190,17 +190,17 @@ func (p *Parser) ClearErrors() {
 func (p *Parser) peekError(t token.TokenType) {
 	// expected next token is .. , got ...
 	msg := fmt.Sprintf("%v kỳ vọng thẻ kế tiếp là %s, nhưng lại nhận %s",
-		p.l.GetPos(), t, p.peekTokenType())
+		p.peekToken.Pos, t, p.peekTokenType())
 	p.errors = append(p.errors, msg)
 }
 
-func (p *Parser) noPrefixParseFnError(t token.TokenType) {
-	msg := fmt.Sprintf("%v không tìm thấy hàm phân giải tiền tố cho %s", p.l.GetPos(), t)
+func (p *Parser) noPrefixParseFnError(t token.Token) {
+	msg := fmt.Sprintf("%v không tìm thấy hàm phân giải tiền tố cho %s", t.Pos, t.Literal)
 	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) hashKeyError(t ast.Expression) {
-	msg := fmt.Sprintf("%v đối tượng trong bảng băm không hợp lệ %s (phải là một tên định danh nếu không có khóa)", p.l.GetPos(), t.String())
+	msg := fmt.Sprintf("%v đối tượng trong bảng băm không hợp lệ %s (phải là một tên định danh nếu không có khóa)", t.Position(), t.String())
 	p.errors = append(p.errors, msg)
 }
 
@@ -318,7 +318,7 @@ func (p *Parser) parseContinueStatement() *ast.ContinueStatement {
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
-		p.noPrefixParseFnError(p.curToken.Type)
+		p.noPrefixParseFnError(p.curToken)
 		return nil
 	}
 	leftExp := prefix()
@@ -362,7 +362,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	_, ok := value.SetString(p.curToken.Literal, 0)
 
 	if !ok {
-		msg := fmt.Sprintf("%v không thể phân giải %q như số nguyên", p.l.GetPos(), p.curToken.Literal)
+		msg := fmt.Sprintf("%v không thể phân giải %q như số nguyên", p.curToken.Pos, p.curToken.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}
@@ -375,7 +375,7 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 
 	value, err := strconv.ParseFloat(p.curToken.Literal, 64)
 	if err != nil {
-		msg := fmt.Sprintf("%v không thể phân giải %q như số thực", p.l.GetPos(), p.curToken.Literal)
+		msg := fmt.Sprintf("%v không thể phân giải %q như số thực", p.curToken.Pos, p.curToken.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}

@@ -7,9 +7,10 @@ import (
 	"math/big"
 	"strings"
 	"vnlang/ast"
+	"vnlang/scanner"
 )
 
-type BuiltinFunction func(args ...Object) Object
+type BuiltinFunction func(node ast.Node, args ...Object) Object
 
 type ObjectType string
 
@@ -122,11 +123,12 @@ func (rv *ContinueSignal) Type() ObjectType { return CONTINUE_SIGNAL_OBJ }
 func (rv *ContinueSignal) Inspect() string  { return "ngắt" }
 
 type Error struct {
+	Pos     scanner.Position
 	Message string
 }
 
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
-func (e *Error) Inspect() string  { return "LỖI: " + e.Message }
+func (e *Error) Inspect() string  { return "LỖI " + e.Pos.String() + ": " + e.Message }
 
 type Function struct {
 	Parameters []*ast.Identifier

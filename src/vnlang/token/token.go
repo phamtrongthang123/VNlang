@@ -1,5 +1,7 @@
 package token
 
+import "vnlang/scanner"
+
 type TokenType string
 
 const (
@@ -66,6 +68,7 @@ const (
 type Token struct {
 	Type    TokenType
 	Literal string
+	Pos     scanner.Position
 }
 
 var keywords = map[string]TokenType{

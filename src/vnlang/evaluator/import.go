@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"vnlang/ast"
 	"vnlang/lexer"
 	"vnlang/object"
 	"vnlang/parser"
@@ -27,13 +28,13 @@ func RunFile(path string, env *object.Environment) object.Object {
 	return Eval(prog, env)
 }
 
-func ImportFile(p *object.Import, args ...object.Object) object.Object {
+func ImportFile(node ast.Node, p *object.Import, args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+		return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 			len(args))
 	}
 	if args[0].Type() != object.STRING_OBJ {
-		return newError("Tham số truyền vào hàm `sử_dụng` phải là một xâu đường dẫn. Nhận được kiểu %s",
+		return newError(node, "Tham số truyền vào hàm `sử_dụng` phải là một xâu đường dẫn. Nhận được kiểu %s",
 			args[0].Type())
 	}
 

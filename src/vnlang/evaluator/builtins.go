@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"vnlang/ast"
 	"vnlang/object"
 )
 
 var builtins = map[string]*object.Builtin{
 	// len
-	"độ_dài": {Fn: func(args ...object.Object) object.Object {
+	"độ_dài": {Fn: func(node ast.Node, args ...object.Object) object.Object {
 		if len(args) != 1 {
-			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+			return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 				len(args))
 		}
 
@@ -21,15 +22,15 @@ var builtins = map[string]*object.Builtin{
 		case *object.String:
 			return &object.Integer{Value: big.NewInt(int64(len(arg.Value)))}
 		default:
-			return newError("Tham số truyền vào `độ_dài` không được hỗ trợ lấy độ dài (chỉ có Mảng hoặc Chuỗi được hỗ trợ), kiểu tham số %s.",
+			return newError(node, "Tham số truyền vào `độ_dài` không được hỗ trợ lấy độ dài (chỉ có Mảng hoặc Chuỗi được hỗ trợ), kiểu tham số %s.",
 				args[0].Type())
 		}
 	},
 	},
 	// convert big int to float
-	"thực": {Fn: func(args ...object.Object) object.Object {
+	"thực": {Fn: func(node ast.Node, args ...object.Object) object.Object {
 		if len(args) != 1 {
-			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+			return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 				len(args))
 		}
 
@@ -40,14 +41,14 @@ var builtins = map[string]*object.Builtin{
 			valFloat, _ := new(big.Float).SetInt(val.Value).Float64()
 			return &object.Float{Value: valFloat}
 		default:
-			return newError("Tham số truyền vào `thực` phải là số nguyên hoặc số thực, kiểu tham số %s.",
+			return newError(node, "Tham số truyền vào `thực` phải là số nguyên hoặc số thực, kiểu tham số %s.",
 				args[0].Type())
 		}
 	},
 	},
-	"nguyên": {Fn: func(args ...object.Object) object.Object {
+	"nguyên": {Fn: func(node ast.Node, args ...object.Object) object.Object {
 		if len(args) != 1 {
-			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+			return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 				len(args))
 		}
 
@@ -59,15 +60,15 @@ var builtins = map[string]*object.Builtin{
 		case *object.Integer:
 			return val
 		default:
-			return newError("Tham số truyền vào `nguyên` phải là số nguyên hoặc số thực, kiểu tham số %s.",
+			return newError(node, "Tham số truyền vào `nguyên` phải là số nguyên hoặc số thực, kiểu tham số %s.",
 				args[0].Type())
 		}
 	},
 	},
 	// string() // convert object to string
-	"xâu": {Fn: func(args ...object.Object) object.Object {
+	"xâu": {Fn: func(node ast.Node, args ...object.Object) object.Object {
 		if len(args) != 1 {
-			return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+			return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 				len(args))
 		}
 
@@ -76,7 +77,7 @@ var builtins = map[string]*object.Builtin{
 	},
 	// puts
 	"in_ra": {
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			for _, arg := range args {
 				fmt.Print(arg.Inspect(), " ")
 			}
@@ -87,13 +88,13 @@ var builtins = map[string]*object.Builtin{
 	},
 	//first
 	"đầu": {
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+				return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 					len(args))
 			}
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("Tham số truyền vào hàm lấy `đầu` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
+				return newError(node, "Tham số truyền vào hàm lấy `đầu` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
@@ -107,13 +108,13 @@ var builtins = map[string]*object.Builtin{
 	},
 	// last
 	"đuôi": {
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+				return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 					len(args))
 			}
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("Tham số truyền vào hàm lấy `đuôi` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
+				return newError(node, "Tham số truyền vào hàm lấy `đuôi` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
@@ -128,13 +129,13 @@ var builtins = map[string]*object.Builtin{
 	},
 	// rest, rest returns a new array containing all elements of the array passed as argument, except the `first one`.
 	"trừ_đầu": {
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if len(args) != 1 {
-				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+				return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 					len(args))
 			}
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("Tham số truyền vào hàm lấy `trừ_đầu` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
+				return newError(node, "Tham số truyền vào hàm lấy `trừ_đầu` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
@@ -151,13 +152,13 @@ var builtins = map[string]*object.Builtin{
 	},
 	// push
 	"đẩy": {
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if len(args) != 2 {
-				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 2",
+				return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 2",
 					len(args))
 			}
 			if args[0].Type() != object.ARRAY_OBJ {
-				return newError("Tham số truyền vào hàm lấy `đẩy` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
+				return newError(node, "Tham số truyền vào hàm lấy `đẩy` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
@@ -172,13 +173,13 @@ var builtins = map[string]*object.Builtin{
 		},
 	},
 	"thoát": {
-		Fn: func(args ...object.Object) object.Object {
+		Fn: func(node ast.Node, args ...object.Object) object.Object {
 			if len(args) > 1 {
-				return newError("Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 0 hoặc 1",
+				return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 0 hoặc 1",
 					len(args))
 			}
 			if len(args) > 0 && args[0].Type() != object.INTEGER_OBJ {
-				return newError("Tham số là một số nguyên (exit code). Nhận được %s",
+				return newError(node, "Tham số là một số nguyên (exit code). Nhận được %s",
 					args[0].Type())
 			}
 			exitCode := 0

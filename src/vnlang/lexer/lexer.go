@@ -25,10 +25,6 @@ func (l *Lexer) ResetLineCount() {
 	l.s.ResetLineCount()
 }
 
-func (l *Lexer) GetPos() scanner.Position {
-	return l.s.Position
-}
-
 func (l *Lexer) NextToken() token.Token {
 	var t token.Token
 
@@ -112,6 +108,7 @@ func (l *Lexer) NextToken() token.Token {
 		lit := l.s.TokenText()
 		t = token.Token{Type: token.ILLEGAL, Literal: lit}
 	}
+	t.Pos = l.s.Position
 	return t
 }
 
