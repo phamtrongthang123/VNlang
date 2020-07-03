@@ -43,8 +43,9 @@ func runRepl() {
 
 func runScript(args []string) {
 	env := object.NewEnvironment()
+	s := object.NewCallStack()
 	env.Set("tham_số", toArgsArray(args))
-	evaluated := evaluator.RunFile(args[0], env)
+	evaluated := evaluator.RunFile(s, args[0], env)
 	if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 		fmt.Println(evaluated.Inspect())
 	}

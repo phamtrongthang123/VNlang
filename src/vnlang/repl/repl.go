@@ -33,6 +33,8 @@ func Start(in io.Reader, out io.Writer) {
 	l := lexer.New(in, "")
 	p := parser.New(l)
 
+	s := object.NewCallStack()
+
 	for {
 		fmt.Printf(PROMPT)
 
@@ -50,10 +52,14 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		evaluator.ResetInterrupt()
-		evaluated := evaluator.Eval(program, env)
+		evaluated := evaluator.Eval(s, program, env)
 		if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 			io.WriteString(out, evaluated.Inspect())
 			io.WriteString(out, "\n")
+			errors, ok := evaluated.(*object.Error)
+			if ok {
+				errors.Stack.PrintCallStack(out, 10)
+			}
 		}
 	}
 }

@@ -12,7 +12,7 @@ import (
 
 const importKeyword = "sử_dụng"
 
-func RunFile(path string, env *object.Environment) object.Object {
+func RunFile(s object.CallStack, path string, env *object.Environment) object.Object {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0)
 	if err != nil {
 		return &object.Error{Message: "không thể mở file"}
@@ -25,22 +25,22 @@ func RunFile(path string, env *object.Environment) object.Object {
 		return &object.Error{Message: errStr.String()}
 	}
 
-	return Eval(prog, env)
+	return Eval(s, prog, env)
 }
 
-func ImportFile(node ast.Node, p *object.Import, args ...object.Object) object.Object {
+func ImportFile(s object.CallStack, node ast.Node, p *object.Import, args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return newError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+		return newError(s, node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 			len(args))
 	}
 	if args[0].Type() != object.STRING_OBJ {
-		return newError(node, "Tham số truyền vào hàm `sử_dụng` phải là một xâu đường dẫn. Nhận được kiểu %s",
+		return newError(s, node, "Tham số truyền vào hàm `sử_dụng` phải là một xâu đường dẫn. Nhận được kiểu %s",
 			args[0].Type())
 	}
 
 	path := args[0].(*object.String).Value
 	newEnv := object.NewEnvironment()
-	evaluated := RunFile(path, newEnv)
+	evaluated := RunFile(s, path, newEnv)
 	if !isError(evaluated) {
 		data, ok := newEnv.Get("xuất")
 		if ok {

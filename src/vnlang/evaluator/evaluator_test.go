@@ -616,7 +616,7 @@ func testEval(input string) object.Object {
 	program := p.ParseProgram()
 	env := object.NewEnvironment()
 
-	return Eval(program, env)
+	return Eval(object.NewCallStack(), program, env)
 }
 
 func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {

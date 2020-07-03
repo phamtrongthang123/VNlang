@@ -1,5 +1,9 @@
 package object
 
+func NewCallStack() CallStack {
+	return CallStack{}
+}
+
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env := NewEnvironment()
 	env.outer = outer

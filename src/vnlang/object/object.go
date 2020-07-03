@@ -4,13 +4,37 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"math/big"
 	"strings"
 	"vnlang/ast"
 	"vnlang/scanner"
 )
 
-type BuiltinFunction func(node ast.Node, args ...Object) Object
+type ActivationRecord struct {
+	CallNode *ast.CallExpression
+	Function Object
+	Args     []Object
+}
+
+type CallStack []ActivationRecord
+
+func (s CallStack) PrintCallStack(out io.Writer, level int) {
+	n := len(s) - level
+	if n < 0 {
+		n = 0
+	}
+
+	for i := len(s) - 1; i >= n; i-- {
+		fmt.Fprintf(out, "%d: %v %v\n", i, s[i].CallNode.Position(), s[i].CallNode)
+	}
+
+	if len(s) > level {
+		fmt.Fprintf(out, "...\n")
+	}
+}
+
+type BuiltinFunction func(s CallStack, node ast.Node, args ...Object) Object
 
 type ObjectType string
 
@@ -123,6 +147,7 @@ func (rv *ContinueSignal) Type() ObjectType { return CONTINUE_SIGNAL_OBJ }
 func (rv *ContinueSignal) Inspect() string  { return "ngắt" }
 
 type Error struct {
+	Stack   CallStack
 	Pos     scanner.Position
 	Message string
 }
