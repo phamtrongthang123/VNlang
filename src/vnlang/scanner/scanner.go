@@ -176,6 +176,10 @@ type Scanner struct {
 	Position
 }
 
+func (s *Scanner) ResetLineCount() {
+	s.line = 1
+}
+
 // Init initializes a Scanner with a new source and returns s.
 // Error is set to nil, ErrorCount is set to 0, Mode is set to GoTokens,
 // and Whitespace is set to GoWhitespace.

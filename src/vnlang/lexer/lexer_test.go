@@ -129,7 +129,7 @@ nếu (5 < 10) {
 		{token.EOF, ""},
 	}
 
-	l := New(strings.NewReader(input))
+	l := New(strings.NewReader(input), "test")
 
 	var tok token.Token
 	for i, tt := range tests {

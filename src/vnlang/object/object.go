@@ -4,12 +4,48 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"math/big"
 	"strings"
 	"vnlang/ast"
+	"vnlang/scanner"
 )
 
-type BuiltinFunction func(args ...Object) Object
+type ActivationRecord struct {
+	CallNode *ast.CallExpression
+	Function Object
+	Args     []Object
+}
+
+type CallStack []ActivationRecord
+
+type Evaluator interface {
+	Interrupt()
+	ResetInterrupt()
+	GetCallStack() CallStack
+	GetEnvironment() *Environment
+	Eval(node ast.Node) Object
+	NewError(node ast.Node, format string, a ...interface{}) *Error
+	CloneClean() Evaluator
+}
+
+func (s CallStack) PrintCallStack(out io.Writer, level int) {
+	n := len(s) - level
+	if n < 0 {
+		n = 0
+	}
+
+	for i := len(s) - 1; i >= n; i-- {
+		fmt.Fprintf(out, "%d: %v %v\n", i, s[i].CallNode.Position(), s[i].CallNode)
+	}
+
+	if len(s) > level {
+		fmt.Fprintf(out, "...\n")
+	}
+}
+
+type BuiltinFunction func(e Evaluator, node ast.Node, args ...Object) Object
+type BuiltinFnMap map[string]*Builtin
 
 type ObjectType string
 
@@ -28,7 +64,6 @@ const (
 
 	FUNCTION_OBJ = "HÀM"
 	BUILTIN_OBJ  = "CÓ_SẴN"
-	IMPORT_OBJ   = "SỬ_DỤNG"
 
 	ARRAY_OBJ = "MẢNG"
 	HASH_OBJ  = "BĂM"
@@ -46,6 +81,11 @@ type Hashable interface {
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+}
+
+func IsError(obj Object) bool {
+	_, ok := obj.(*Error)
+	return ok
 }
 
 type Integer struct {
@@ -122,11 +162,13 @@ func (rv *ContinueSignal) Type() ObjectType { return CONTINUE_SIGNAL_OBJ }
 func (rv *ContinueSignal) Inspect() string  { return "ngắt" }
 
 type Error struct {
+	Stack   CallStack
+	Pos     scanner.Position
 	Message string
 }
 
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
-func (e *Error) Inspect() string  { return "LỖI: " + e.Message }
+func (e *Error) Inspect() string  { return "LỖI " + e.Pos.String() + ": " + e.Message }
 
 type Function struct {
 	Parameters []*ast.Identifier
@@ -172,13 +214,6 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string  { return "hàm có sẵn" }
-
-type Import struct {
-	Env *Environment
-}
-
-func (b *Import) Type() ObjectType { return IMPORT_OBJ }
-func (b *Import) Inspect() string  { return "sử dụng" }
 
 type Array struct {
 	Elements []Object

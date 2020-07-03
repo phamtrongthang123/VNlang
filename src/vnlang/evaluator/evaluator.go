@@ -13,37 +13,64 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
-var interrupt = false
-
-func Interrupt() {
-	interrupt = true
+type Evaluator struct {
+	interrupt bool
+	Builtin   object.BuiltinFnMap
+	Stack     object.CallStack
+	Env       *object.Environment
 }
 
-func ResetInterrupt() {
-	interrupt = false
+func New(Builtin object.BuiltinFnMap) *Evaluator {
+	return &Evaluator{
+		Builtin: Builtin,
+		Stack:   object.NewCallStack(),
+		Env:     object.NewEnvironment(),
+	}
 }
 
-func Eval(node ast.Node, env *object.Environment) object.Object {
-	if interrupt {
-		ResetInterrupt()
-		return newError("Tiến trình bị ngắt")
+func (e *Evaluator) Interrupt() {
+	e.interrupt = true
+}
+
+func (e *Evaluator) ResetInterrupt() {
+	e.interrupt = false
+}
+
+func (e *Evaluator) GetCallStack() object.CallStack {
+	return e.Stack
+}
+
+func (e *Evaluator) GetEnvironment() *object.Environment {
+	return e.Env
+}
+
+func (e *Evaluator) CloneClean() object.Evaluator {
+	newE := *e
+	newE.Env = object.NewEnvironment()
+	return &newE
+}
+
+func (e *Evaluator) Eval(node ast.Node) object.Object {
+	if e.interrupt {
+		e.ResetInterrupt()
+		return e.NewError(node, "Tiến trình bị ngắt")
 	}
 
 	switch node := node.(type) {
 
 	// Statements
 	case *ast.Program:
-		return evalProgram(node, env)
+		return e.evalProgram(node)
 
 	case *ast.BlockStatement:
-		return evalBlockStatement(node, env)
+		return e.evalBlockStatement(node)
 
 	case *ast.ExpressionStatement:
-		return Eval(node.Expression, env)
+		return e.Eval(node.Expression)
 
 	case *ast.ReturnStatement:
-		val := Eval(node.ReturnValue, env)
-		if isError(val) {
+		val := e.Eval(node.ReturnValue)
+		if object.IsError(val) {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
@@ -55,11 +82,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.ContinueSignal{}
 
 	case *ast.LetStatement:
-		val := Eval(node.Value, env)
-		if isError(val) {
+		val := e.Eval(node.Value)
+		if object.IsError(val) {
 			return val
 		}
-		env.Set(node.Name.Value, val)
+		e.Env.Set(node.Name.Value, val)
 
 	// Expressions
 	case *ast.IntegerLiteral:
@@ -75,83 +102,51 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nativeBoolToBooleanObject(node.Value)
 
 	case *ast.PrefixExpression:
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
-		}
-		return evalPrefixExpression(node.Operator, right)
+		return e.evalPrefixExpression(node)
 
 	case *ast.InfixExpression:
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
-		}
-
-		return evalInfixExpression(node.Operator, left, right)
+		return e.evalInfixExpression(node)
 
 	case *ast.IfExpression:
-		return evalIfExpression(node, env)
+		return e.evalIfExpression(node)
 
 	case *ast.WhileExpression:
-		return evalWhileExpression(node, env)
+		return e.evalWhileExpression(node)
 
 	case *ast.Identifier:
-		return evalIdentifier(node, env)
+		return e.evalIdentifier(node)
 
 	case *ast.FunctionLiteral:
 		params := node.Parameters
 		body := node.Body
-		return &object.Function{Parameters: params, Env: env, Body: body}
+		return &object.Function{Parameters: params, Env: e.Env, Body: body}
 
 	case *ast.CallExpression:
-		function := Eval(node.Function, env)
-		if isError(function) {
-			return function
-		}
-
-		args := evalExpressions(node.Arguments, env)
-		if len(args) == 1 && isError(args[0]) {
-			return args[0]
-		}
-
-		return applyFunction(function, args)
+		return e.applyFunction(node)
 
 	case *ast.ArrayLiteral:
-		elements := evalExpressions(node.Elements, env)
-		if len(elements) == 1 && isError(elements[0]) {
+		elements := e.evalExpressions(node.Elements)
+		if len(elements) == 1 && object.IsError(elements[0]) {
 			return elements[0]
 		}
 		return &object.Array{Elements: elements}
 
 	case *ast.IndexExpression:
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-		index := Eval(node.Index, env)
-		if isError(index) {
-			return index
-		}
-		return evalIndexExpression(left, index)
+		return e.evalIndexExpression(node)
 
 	case *ast.HashLiteral:
-		return evalHashLiteral(node, env)
+		return e.evalHashLiteral(node)
 
 	}
 
 	return nil
 }
 
-func evalProgram(program *ast.Program, env *object.Environment) object.Object {
+func (e *Evaluator) evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 
 	for _, statement := range program.Statements {
-		result = Eval(statement, env)
+		result = e.Eval(statement)
 
 		switch result := result.(type) {
 		case *object.ReturnValue:
@@ -159,9 +154,9 @@ func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 		case *object.Error:
 			return result
 		case *object.BreakSignal:
-			return newError("Không thể 'ngắt' ngoài vòng lặp")
+			return e.NewError(statement, "Không thể 'ngắt' ngoài vòng lặp")
 		case *object.ContinueSignal:
-			return newError("Không thể 'tiếp' ngoài vòng lặp")
+			return e.NewError(statement, "Không thể 'tiếp' ngoài vòng lặp")
 		}
 
 	}
@@ -169,14 +164,13 @@ func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 	return result
 }
 
-func evalBlockStatement(
+func (e *Evaluator) evalBlockStatement(
 	block *ast.BlockStatement,
-	env *object.Environment,
 ) object.Object {
 	var result object.Object
 
 	for _, statement := range block.Statements {
-		result = Eval(statement, env)
+		result = e.Eval(statement)
 
 		if result != nil {
 			rt := result.Type()
@@ -196,48 +190,62 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	return FALSE
 }
 
-func evalPrefixExpression(operator string, right object.Object) object.Object {
-	switch operator {
+func (e *Evaluator) evalPrefixExpression(node *ast.PrefixExpression) object.Object {
+	right := e.Eval(node.Right)
+	if object.IsError(right) {
+		return right
+	}
+
+	switch node.Operator {
 	case "!":
 		return evalBangOperatorExpression(right)
 	case "-":
-		return evalMinusPrefixOperatorExpression(right)
+		return e.evalMinusPrefixOperatorExpression(node, right)
 	default:
-		return newError("toán tử lạ: %s%s", operator, right.Type())
+		return e.NewError(node, "toán tử lạ: %s%s", node.Operator, right.Type())
 	}
 }
 
-func evalInfixExpression(
-	operator string,
-	left, right object.Object,
+func (e *Evaluator) evalInfixExpression(
+	node *ast.InfixExpression,
 ) object.Object {
+	left := e.Eval(node.Left)
+	if object.IsError(left) {
+		return left
+	}
+
+	right := e.Eval(node.Right)
+	if object.IsError(right) {
+		return right
+	}
+
 	leftType := left.Type()
 	rightType := right.Type()
 
 	if leftType != rightType {
-		return newError("kiểu không tương thích: %s %s %s", leftType, operator, rightType)
+		return e.NewError(node, "kiểu không tương thích: %s %s %s", leftType, node.Operator, rightType)
 	}
 
 	switch leftType {
 	case object.INTEGER_OBJ:
-		return evalIntegerInfixExpression(operator, left, right)
+		return e.evalIntegerInfixExpression(node, left, right)
 	case object.FLOAT_OBJ:
-		return evalFloatInfixExpression(operator, left, right)
+		return e.evalFloatInfixExpression(node, left, right)
 	case object.STRING_OBJ:
-		return evalStringInfixExpression(operator, left, right)
+		return e.evalStringInfixExpression(node, left, right)
 	case object.BOOLEAN_OBJ:
-		return evalBooleanInfixExpression(operator, left, right)
+		return e.evalBooleanInfixExpression(node, left, right)
 	}
 
-	switch operator {
+	switch node.Operator {
 	case "==":
 		return nativeBoolToBooleanObject(left == right)
 	case "!=":
 		return nativeBoolToBooleanObject(left != right)
 	}
 
-	return newError("toán tử lạ: %s %s %s",
-		leftType, operator, rightType)
+	return e.NewError(node, "toán tử lạ: %s %s %s",
+		leftType, node.Operator, rightType)
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
@@ -253,7 +261,7 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 	}
 }
 
-func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
+func (e *Evaluator) evalMinusPrefixOperatorExpression(node *ast.PrefixExpression, right object.Object) object.Object {
 	switch value := right.(type) {
 	case *object.Integer:
 		var newValue big.Int
@@ -262,18 +270,18 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	case *object.Float:
 		return &object.Float{Value: -value.Value}
 	default:
-		return newError("toán tử lạ: -%s", right.Type())
+		return e.NewError(node, "toán tử lạ: -%s", right.Type())
 	}
 }
 
-func evalIntegerInfixExpression(
-	operator string,
+func (e *Evaluator) evalIntegerInfixExpression(
+	node *ast.InfixExpression,
 	left, right object.Object,
 ) object.Object {
 	leftVal := left.(*object.Integer).Value
 	rightVal := right.(*object.Integer).Value
 
-	switch operator {
+	switch node.Operator {
 	case "<":
 		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) < 0)
 	case ">":
@@ -288,7 +296,7 @@ func evalIntegerInfixExpression(
 		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) != 0)
 	}
 	var resVal big.Int
-	switch operator {
+	switch node.Operator {
 	case "+":
 		resVal.Add(leftVal, rightVal)
 	case "-":
@@ -300,20 +308,20 @@ func evalIntegerInfixExpression(
 	case "%":
 		resVal.Mod(leftVal, rightVal)
 	default:
-		return newError("toán tử lạ: %s %s %s",
-			left.Type(), operator, right.Type())
+		return e.NewError(node, "toán tử lạ: %s %s %s",
+			left.Type(), node.Operator, right.Type())
 	}
 	return &object.Integer{Value: &resVal}
 }
 
-func evalFloatInfixExpression(
-	operator string,
+func (e *Evaluator) evalFloatInfixExpression(
+	node *ast.InfixExpression,
 	left, right object.Object,
 ) object.Object {
 	leftVal := left.(*object.Float).Value
 	rightVal := right.(*object.Float).Value
 
-	switch operator {
+	switch node.Operator {
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
@@ -335,19 +343,19 @@ func evalFloatInfixExpression(
 	case "/":
 		return &object.Float{Value: leftVal / rightVal}
 	default:
-		return newError("toán tử lạ: %s %s %s",
-			left.Type(), operator, right.Type())
+		return e.NewError(node, "toán tử lạ: %s %s %s",
+			left.Type(), node.Operator, right.Type())
 	}
 }
 
-func evalStringInfixExpression(
-	operator string,
+func (e *Evaluator) evalStringInfixExpression(
+	node *ast.InfixExpression,
 	left, right object.Object,
 ) object.Object {
 	leftVal := left.(*object.String).Value
 	rightVal := right.(*object.String).Value
 
-	switch operator {
+	switch node.Operator {
 	case "+":
 		return &object.String{Value: leftVal + rightVal}
 	case "==":
@@ -363,20 +371,20 @@ func evalStringInfixExpression(
 	case ">=":
 		return &object.Boolean{Value: leftVal >= rightVal}
 	default:
-		return newError("toán tử lạ: %s %s %s",
-			left.Type(), operator, right.Type())
+		return e.NewError(node, "toán tử lạ: %s %s %s",
+			left.Type(), node.Operator, right.Type())
 	}
 
 }
 
-func evalBooleanInfixExpression(
-	operator string,
+func (e *Evaluator) evalBooleanInfixExpression(
+	node *ast.InfixExpression,
 	left, right object.Object,
 ) object.Object {
 	leftVal := left.(*object.Boolean).Value
 	rightVal := right.(*object.Boolean).Value
 
-	switch operator {
+	switch node.Operator {
 	case "||":
 		return &object.Boolean{Value: leftVal || rightVal}
 	case "&&":
@@ -386,44 +394,42 @@ func evalBooleanInfixExpression(
 	case "!=":
 		return &object.Boolean{Value: leftVal != rightVal}
 	default:
-		return newError("toán tử lạ: %s %s %s",
-			left.Type(), operator, right.Type())
+		return e.NewError(node, "toán tử lạ: %s %s %s",
+			left.Type(), node.Operator, right.Type())
 	}
 
 }
 
-func evalIfExpression(
+func (e *Evaluator) evalIfExpression(
 	ie *ast.IfExpression,
-	env *object.Environment,
 ) object.Object {
 	for i, cond := range ie.Condition {
-		condition := Eval(cond, env)
-		if isError(condition) {
+		condition := e.Eval(cond)
+		if object.IsError(condition) {
 			return condition
 		}
 
 		if isTruthy(condition) {
-			return Eval(ie.Consequence[i], env)
+			return e.Eval(ie.Consequence[i])
 		}
 	}
 
 	if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
+		return e.Eval(ie.Alternative)
 	} else {
 		return NULL
 	}
 }
 
-func evalWhileExpression(
+func (e *Evaluator) evalWhileExpression(
 	ie *ast.WhileExpression,
-	env *object.Environment,
 ) object.Object {
 
 	var result object.Object
 
 	for {
-		condition := Eval(ie.Condition, env)
-		if isError(condition) {
+		condition := e.Eval(ie.Condition)
+		if object.IsError(condition) {
 			return condition
 		}
 
@@ -431,7 +437,7 @@ func evalWhileExpression(
 			break
 		}
 
-		result = Eval(ie.Body, env)
+		result = e.Eval(ie.Body)
 
 		if result != nil {
 			rt := result.Type()
@@ -448,23 +454,18 @@ func evalWhileExpression(
 	return unwrapWhileSignal(result)
 }
 
-func evalIdentifier(
+func (e *Evaluator) evalIdentifier(
 	node *ast.Identifier,
-	env *object.Environment,
 ) object.Object {
-	if val, ok := env.Get(node.Value); ok {
+	if val, ok := e.Env.Get(node.Value); ok {
 		return val
 	}
 
-	if builtin, ok := builtins[node.Value]; ok {
+	if builtin, ok := e.Builtin[node.Value]; ok {
 		return builtin
 	}
 
-	if node.Value == importKeyword {
-		return &object.Import{Env: env}
-	}
-
-	return newError("không tìm thấy tên định danh: " + node.Value)
+	return e.NewError(node, "không tìm thấy tên định danh: "+node.Value)
 }
 
 func isTruthy(obj object.Object) bool {
@@ -480,24 +481,18 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
-func newError(format string, a ...interface{}) *object.Error {
-	return &object.Error{Message: fmt.Sprintf(format, a...)}
+func (e *Evaluator) NewError(node ast.Node, format string, a ...interface{}) *object.Error {
+	return &object.Error{Stack: e.Stack, Pos: node.Position(), Message: fmt.Sprintf(format, a...)}
 }
 
-func isError(obj object.Object) bool {
-	_, ok := obj.(*object.Error)
-	return ok
-}
-
-func evalExpressions(
+func (e *Evaluator) evalExpressions(
 	exps []ast.Expression,
-	env *object.Environment,
 ) []object.Object {
 	var result []object.Object
 
-	for _, e := range exps {
-		evaluated := Eval(e, env)
-		if isError(evaluated) {
+	for _, exp := range exps {
+		evaluated := e.Eval(exp)
+		if object.IsError(evaluated) {
 			return []object.Object{evaluated}
 		}
 		result = append(result, evaluated)
@@ -506,29 +501,47 @@ func evalExpressions(
 	return result
 }
 
-func applyFunction(fn object.Object, args []object.Object) object.Object {
+func (e *Evaluator) applyFunction(node *ast.CallExpression) object.Object {
+	fn := e.Eval(node.Function)
+	if object.IsError(fn) {
+		return fn
+	}
+
+	args := e.evalExpressions(node.Arguments)
+	if len(args) == 1 && object.IsError(args[0]) {
+		return args[0]
+	}
+
+	s := e.Stack
+	newS := append(e.Stack, object.ActivationRecord{
+		CallNode: node,
+		Function: fn,
+		Args:     args,
+	})
+
 	switch fn := fn.(type) {
 
 	case *object.Function:
-		extendedEnv := extendFunctionEnv(fn, args)
-		evaluated := Eval(fn.Body, extendedEnv)
+		oldEnv := e.Env
+		e.Env = extendFunctionEnv(fn, args)
+		e.Stack = newS
+		evaluated := e.Eval(fn.Body)
+		e.Stack = s
+		e.Env = oldEnv
+
 		switch evaluated.(type) {
 		case *object.BreakSignal:
-			return newError("không thể ngắt ngoài vòng lặp")
+			return e.NewError(node, "không thể 'ngắt' ngoài vòng lặp")
 		case *object.ContinueSignal:
-			return newError("không thể ngắt tiếptiếp vòng lặp")
-
+			return e.NewError(node, "không thể 'tiếp' ngoài vòng lặp")
 		}
 
 		return unwrapReturnValue(evaluated)
 
 	case *object.Builtin:
-		return fn.Fn(args...)
-	case *object.Import:
-
-		return ImportFile(fn, args...)
+		return fn.Fn(e, node, args...)
 	default:
-		return newError("không phải là một hàm: %s", fn.Type())
+		return e.NewError(node, "không phải là một hàm: %s", fn.Type())
 	}
 }
 
@@ -564,14 +577,23 @@ func unwrapWhileSignal(obj object.Object) object.Object {
 	}
 }
 
-func evalIndexExpression(left, index object.Object) object.Object {
+func (e *Evaluator) evalIndexExpression(node *ast.IndexExpression) object.Object {
+	left := e.Eval(node.Left)
+	if object.IsError(left) {
+		return left
+	}
+	index := e.Eval(node.Index)
+	if object.IsError(index) {
+		return index
+	}
+
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, index)
 	case left.Type() == object.HASH_OBJ:
-		return evalHashIndexExpression(left, index)
+		return e.evalHashIndexExpression(node, left, index)
 	default:
-		return newError("toán tử chỉ mục không hỗ trợ cho: %s", left.Type())
+		return e.NewError(node, "toán tử chỉ mục không hỗ trợ cho: %s", left.Type())
 	}
 }
 
@@ -592,25 +614,24 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 	return arrayObject.Elements[idx]
 }
 
-func evalHashLiteral(
+func (e *Evaluator) evalHashLiteral(
 	node *ast.HashLiteral,
-	env *object.Environment,
 ) object.Object {
 	pairs := make(map[object.HashKey]object.HashPair)
 
 	for keyNode, valueNode := range node.Pairs {
-		key := Eval(keyNode, env)
-		if isError(key) {
+		key := e.Eval(keyNode)
+		if object.IsError(key) {
 			return key
 		}
 
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return newError("không thể dùng như khóa băm: %s", key.Type())
+			return e.NewError(node, "không thể dùng như khóa băm: %s", key.Type())
 		}
 
-		value := Eval(valueNode, env)
-		if isError(value) {
+		value := e.Eval(valueNode)
+		if object.IsError(value) {
 			return value
 		}
 
@@ -621,12 +642,12 @@ func evalHashLiteral(
 	return &object.Hash{Pairs: pairs}
 }
 
-func evalHashIndexExpression(hash, index object.Object) object.Object {
+func (e *Evaluator) evalHashIndexExpression(node *ast.IndexExpression, hash, index object.Object) object.Object {
 	hashObject := hash.(*object.Hash)
 
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return newError("không thể dùng như khóa băm: %s", index.Type())
+		return e.NewError(node, "không thể dùng như khóa băm: %s", index.Type())
 	}
 
 	pair, ok := hashObject.Pairs[key.HashKey()]

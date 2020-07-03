@@ -11,13 +11,18 @@ type Lexer struct {
 	curr rune
 }
 
-func New(in io.Reader) *Lexer {
+func New(in io.Reader, filename string) *Lexer {
 	var s scanner.Scanner
 	s.Init(in)
+	s.Filename = filename
 	s.Whitespace ^= 1 << '\n' // don't skip new lines
 
 	l := &Lexer{s: s}
 	return l
+}
+
+func (l *Lexer) ResetLineCount() {
+	l.s.ResetLineCount()
 }
 
 func (l *Lexer) NextToken() token.Token {
@@ -70,20 +75,16 @@ func (l *Lexer) NextToken() token.Token {
 	case '\n':
 		t = l.token(token.NEWLINE)
 	case scanner.Ident:
-		// p := l.s.Pos()
 		lit := l.s.TokenText()
-		// col := p.Column
 		if la := l.s.Peek(); la == '?' || la == '!' {
 			l.readRune()
 			lit += l.s.TokenText()
-			// col += 1
 		}
 		t = token.Token{
 			Type:    token.LookupIdent(lit),
 			Literal: lit,
 		}
 	case scanner.Int:
-		// p := l.s.Pos()
 		lit := l.s.TokenText()
 		t = token.Token{
 			Type:    token.INT,
@@ -96,20 +97,18 @@ func (l *Lexer) NextToken() token.Token {
 			Literal: lit,
 		}
 	case scanner.String:
-		// p := l.s.Pos()
 		lit := l.s.TokenText()
 		t = token.Token{
 			Type:    token.STRING,
 			Literal: lit[1 : len(lit)-1],
 		}
 	case scanner.EOF:
-		// p := l.s.Pos()
 		t = token.Token{Type: token.EOF, Literal: ""}
 	default:
-		// p := l.s.Pos()
 		lit := l.s.TokenText()
 		t = token.Token{Type: token.ILLEGAL, Literal: lit}
 	}
+	t.Pos = l.s.Position
 	return t
 }
 
@@ -118,19 +117,15 @@ func (l *Lexer) readRune() {
 }
 
 func (l *Lexer) token(ty token.TokenType) token.Token {
-	// p := l.s.Pos()
 	lit := l.s.TokenText()
 	return token.Token{Type: ty, Literal: lit}
 }
 
 func (l *Lexer) either(lookAhead rune, option, alternative token.TokenType) token.Token {
-	// p := l.s.Pos()
 	lit := l.s.TokenText()
-	// col := p.Column
 	if l.s.Peek() == lookAhead {
 		l.readRune()
 		lit += l.s.TokenText()
-		// col += 1
 		return token.Token{Type: option, Literal: lit}
 	} else {
 		return token.Token{Type: alternative, Literal: lit}

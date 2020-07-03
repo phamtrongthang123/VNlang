@@ -7,7 +7,6 @@
     // Tính a ^ (k/2) mod n
     đặt kq = mũ(a, k / 2, n)
     đặt kq = kq * kq % n
-
     // Nếu k lẻ
     nếu (k % 2 == 1) {
         đặt kq = kq * a % n
@@ -58,8 +57,7 @@
     trả_về sai
 }
 
-xuất = {
+đặt xuất = {
     mũ,
     nguyên_tố,
-    abc
 }

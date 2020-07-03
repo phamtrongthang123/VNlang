@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"vnlang/evaluator"
 	"vnlang/lexer"
 	"vnlang/object"
 	"vnlang/parser"
@@ -13,29 +12,34 @@ import (
 
 const PROMPT = ">> "
 
-func SetupInterrupt() {
+func SetupInterrupt(e object.Evaluator) {
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, os.Interrupt)
 	go func() {
 		for s := range signalChannel {
 			switch s {
 			case os.Interrupt:
-				evaluator.Interrupt()
+				e.Interrupt()
 			}
 		}
 	}()
 }
 
-func Start(in io.Reader, out io.Writer) {
-	SetupInterrupt()
-	env := object.NewEnvironment()
+func ResetInterrupt() {
+	signal.Reset(os.Interrupt)
+}
 
-	l := lexer.New(in)
+func Start(e object.Evaluator, in io.Reader, out io.Writer) {
+	SetupInterrupt(e)
+	defer ResetInterrupt()
+
+	l := lexer.New(in, "")
 	p := parser.New(l)
 
 	for {
 		fmt.Printf(PROMPT)
 
+		p.ResetLineCount()
 		program := p.ParseOneStatementProgram()
 
 		if program == nil {
@@ -48,11 +52,15 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluator.ResetInterrupt()
-		evaluated := evaluator.Eval(program, env)
+		e.ResetInterrupt()
+		evaluated := e.Eval(program)
 		if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 			io.WriteString(out, evaluated.Inspect())
 			io.WriteString(out, "\n")
+			errors, ok := evaluated.(*object.Error)
+			if ok {
+				errors.Stack.PrintCallStack(out, 10)
+			}
 		}
 	}
 }
