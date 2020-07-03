@@ -19,6 +19,16 @@ type ActivationRecord struct {
 
 type CallStack []ActivationRecord
 
+type Evaluator interface {
+	Interrupt()
+	ResetInterrupt()
+	GetCallStack() CallStack
+	GetEnvironment() *Environment
+	Eval(node ast.Node) Object
+	NewError(node ast.Node, format string, a ...interface{}) *Error
+	CloneClean() Evaluator
+}
+
 func (s CallStack) PrintCallStack(out io.Writer, level int) {
 	n := len(s) - level
 	if n < 0 {
@@ -34,7 +44,8 @@ func (s CallStack) PrintCallStack(out io.Writer, level int) {
 	}
 }
 
-type BuiltinFunction func(s CallStack, node ast.Node, args ...Object) Object
+type BuiltinFunction func(e Evaluator, node ast.Node, args ...Object) Object
+type BuiltinFnMap map[string]*Builtin
 
 type ObjectType string
 
@@ -53,7 +64,6 @@ const (
 
 	FUNCTION_OBJ = "HÀM"
 	BUILTIN_OBJ  = "CÓ_SẴN"
-	IMPORT_OBJ   = "SỬ_DỤNG"
 
 	ARRAY_OBJ = "MẢNG"
 	HASH_OBJ  = "BĂM"
@@ -71,6 +81,11 @@ type Hashable interface {
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+}
+
+func IsError(obj Object) bool {
+	_, ok := obj.(*Error)
+	return ok
 }
 
 type Integer struct {
@@ -199,13 +214,6 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string  { return "hàm có sẵn" }
-
-type Import struct {
-	Env *Environment
-}
-
-func (b *Import) Type() ObjectType { return IMPORT_OBJ }
-func (b *Import) Inspect() string  { return "sử dụng" }
 
 type Array struct {
 	Elements []Object

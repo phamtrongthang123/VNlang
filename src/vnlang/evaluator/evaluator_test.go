@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"strings"
 	"testing"
+	"vnlang/builtin"
 	"vnlang/lexer"
 	"vnlang/object"
 	"vnlang/parser"
@@ -614,9 +615,8 @@ func testEval(input string) object.Object {
 	l := lexer.New(strings.NewReader(input), "<test>")
 	p := parser.New(l)
 	program := p.ParseProgram()
-	env := object.NewEnvironment()
-
-	return Eval(object.NewCallStack(), program, env)
+	e := New(builtin.Builtin)
+	return e.Eval(program)
 }
 
 func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"runtime/pprof"
+	"vnlang/builtin"
 	"vnlang/evaluator"
 	"vnlang/object"
 	"vnlang/repl"
@@ -38,14 +39,14 @@ func runRepl() {
 	}
 	fmt.Printf("Chào người dùng %s!\n",
 		user.Username)
-	repl.Start(os.Stdin, os.Stdout)
+	e := evaluator.New(builtin.Builtin)
+	repl.Start(e, os.Stdin, os.Stdout)
 }
 
 func runScript(args []string) {
-	env := object.NewEnvironment()
-	s := object.NewCallStack()
-	env.Set("tham_số", toArgsArray(args))
-	evaluated := evaluator.RunFile(s, args[0], env)
+	e := evaluator.New(builtin.Builtin)
+	e.Env.Set("tham_số", toArgsArray(args))
+	evaluated := builtin.RunFile(e, args[0])
 	if evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 		fmt.Println(evaluated.Inspect())
 	}
