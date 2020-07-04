@@ -1,0 +1,26 @@
+
+
+đặt lọc = hàm(mảng, điều_kiện) {
+    đặt kq = []
+    đặt i = 0
+    khi (i < độ_dài(mảng)) {
+        nếu (điều_kiện(mảng[i])) {
+            đặt kq = đẩy(kq, mảng[i])
+        }
+        đặt i = i + 1
+    }
+    kq
+}
+
+
+đặt sắp_xếp = hàm(mảng) {
+    nếu (độ_dài(mảng) <= 1) {
+        trả_về mảng
+    }
+
+    đặt chọn = mảng[0]
+    trả_về sắp_xếp(lọc(mảng, hàm(x) {x < chọn})) + lọc(mảng, hàm(x) {x == chọn}) + sắp_xếp(lọc(mảng, hàm(x) {x > chọn}))
+}
+
+
+đặt xuất = sắp_xếp

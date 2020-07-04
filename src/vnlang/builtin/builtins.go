@@ -141,20 +141,15 @@ var Builtin = object.BuiltinFnMap{
 				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 					len(args))
 			}
-			if args[0].Type() != object.ARRAY_OBJ {
+
+			arr, ok := args[0].(*object.Array)
+
+			if !ok {
 				return e.NewError(node, "Tham số truyền vào hàm lấy `trừ_đầu` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
-			arr := args[0].(*object.Array)
-			length := len(arr.Elements)
-			if length > 0 {
-				newElements := make([]object.Object, length-1, length-1)
-				copy(newElements, arr.Elements[1:length])
-				return &object.Array{Elements: newElements}
-			}
-
-			return NULL
+			return &object.Array{Elements: arr.Elements[1:]}
 		},
 	},
 	// push
@@ -164,15 +159,16 @@ var Builtin = object.BuiltinFnMap{
 				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 2",
 					len(args))
 			}
-			if args[0].Type() != object.ARRAY_OBJ {
+
+			arr, ok := args[0].(*object.Array)
+			if !ok {
 				return e.NewError(node, "Tham số truyền vào hàm lấy `đẩy` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
-			arr := args[0].(*object.Array)
 			length := len(arr.Elements)
-
 			newElements := make([]object.Object, length+1, length+1)
+
 			copy(newElements, arr.Elements)
 			newElements[length] = args[1]
 
@@ -185,14 +181,16 @@ var Builtin = object.BuiltinFnMap{
 				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 					len(args))
 			}
-			if args[0].Type() != object.STRING_OBJ {
+
+			path, ok := args[0].(*object.String)
+
+			if !ok {
 				return e.NewError(node, "Tham số truyền vào hàm `sử_dụng` phải là một xâu đường dẫn. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
-			path := args[0].(*object.String).Value
 			newE := e.CloneClean()
-			evaluated := RunFile(newE, path)
+			evaluated := RunFile(newE, path.Value)
 			if !object.IsError(evaluated) {
 				data, ok := newE.GetEnvironment().Get("xuất")
 				if ok {
@@ -211,15 +209,16 @@ var Builtin = object.BuiltinFnMap{
 				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 0 hoặc 1",
 					len(args))
 			}
-			if len(args) > 0 && args[0].Type() != object.INTEGER_OBJ {
-				return e.NewError(node, "Tham số là một số nguyên (exit code). Nhận được %s",
-					args[0].Type())
-			}
+
 			exitCode := 0
 			if len(args) > 0 {
-				exitCodeBig := args[0].(*object.Integer).Value
-				if exitCodeBig.IsInt64() {
-					exitCode = int(args[0].(*object.Integer).Value.Int64())
+				arg, ok := args[0].(*object.Integer)
+				if !ok {
+					return e.NewError(node, "Tham số là một số nguyên (exit code). Nhận được %s",
+						args[0].Type())
+				}
+				if arg.Value.IsInt64() {
+					exitCode = int(arg.Value.Int64())
 				}
 			}
 			os.Exit(exitCode)

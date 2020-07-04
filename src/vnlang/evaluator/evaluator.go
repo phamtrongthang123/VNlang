@@ -2,7 +2,6 @@ package evaluator
 
 import (
 	"fmt"
-	"math/big"
 	"vnlang/ast"
 	"vnlang/object"
 )
@@ -87,7 +86,6 @@ func (e *Evaluator) Eval(node ast.Node) object.Object {
 			return val
 		}
 		e.Env.Set(node.Name.Value, val)
-
 	// Expressions
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
@@ -136,10 +134,11 @@ func (e *Evaluator) Eval(node ast.Node) object.Object {
 
 	case *ast.HashLiteral:
 		return e.evalHashLiteral(node)
-
+	default:
+		return e.NewError(node, "phiên dịch thất bại, lệnh lạ!!")
 	}
 
-	return nil
+	return NULL
 }
 
 func (e *Evaluator) evalProgram(program *ast.Program) object.Object {
@@ -183,223 +182,6 @@ func (e *Evaluator) evalBlockStatement(
 	return result
 }
 
-func nativeBoolToBooleanObject(input bool) *object.Boolean {
-	if input {
-		return TRUE
-	}
-	return FALSE
-}
-
-func (e *Evaluator) evalPrefixExpression(node *ast.PrefixExpression) object.Object {
-	right := e.Eval(node.Right)
-	if object.IsError(right) {
-		return right
-	}
-
-	switch node.Operator {
-	case "!":
-		return evalBangOperatorExpression(right)
-	case "-":
-		return e.evalMinusPrefixOperatorExpression(node, right)
-	default:
-		return e.NewError(node, "toán tử lạ: %s%s", node.Operator, right.Type())
-	}
-}
-
-func (e *Evaluator) evalInfixExpression(
-	node *ast.InfixExpression,
-) object.Object {
-	left := e.Eval(node.Left)
-	if object.IsError(left) {
-		return left
-	}
-
-	right := e.Eval(node.Right)
-	if object.IsError(right) {
-		return right
-	}
-
-	leftType := left.Type()
-	rightType := right.Type()
-
-	if leftType != rightType {
-		return e.NewError(node, "kiểu không tương thích: %s %s %s", leftType, node.Operator, rightType)
-	}
-
-	switch leftType {
-	case object.INTEGER_OBJ:
-		return e.evalIntegerInfixExpression(node, left, right)
-	case object.FLOAT_OBJ:
-		return e.evalFloatInfixExpression(node, left, right)
-	case object.STRING_OBJ:
-		return e.evalStringInfixExpression(node, left, right)
-	case object.BOOLEAN_OBJ:
-		return e.evalBooleanInfixExpression(node, left, right)
-	}
-
-	switch node.Operator {
-	case "==":
-		return nativeBoolToBooleanObject(left == right)
-	case "!=":
-		return nativeBoolToBooleanObject(left != right)
-	}
-
-	return e.NewError(node, "toán tử lạ: %s %s %s",
-		leftType, node.Operator, rightType)
-}
-
-func evalBangOperatorExpression(right object.Object) object.Object {
-	switch right {
-	case TRUE:
-		return FALSE
-	case FALSE:
-		return TRUE
-	case NULL:
-		return TRUE
-	default:
-		return FALSE
-	}
-}
-
-func (e *Evaluator) evalMinusPrefixOperatorExpression(node *ast.PrefixExpression, right object.Object) object.Object {
-	switch value := right.(type) {
-	case *object.Integer:
-		var newValue big.Int
-		newValue.Neg(value.Value)
-		return &object.Integer{Value: &newValue}
-	case *object.Float:
-		return &object.Float{Value: -value.Value}
-	default:
-		return e.NewError(node, "toán tử lạ: -%s", right.Type())
-	}
-}
-
-func (e *Evaluator) evalIntegerInfixExpression(
-	node *ast.InfixExpression,
-	left, right object.Object,
-) object.Object {
-	leftVal := left.(*object.Integer).Value
-	rightVal := right.(*object.Integer).Value
-
-	switch node.Operator {
-	case "<":
-		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) < 0)
-	case ">":
-		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) > 0)
-	case "<=":
-		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) <= 0)
-	case ">=":
-		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) >= 0)
-	case "==":
-		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) == 0)
-	case "!=":
-		return nativeBoolToBooleanObject(leftVal.Cmp(rightVal) != 0)
-	}
-	var resVal big.Int
-	switch node.Operator {
-	case "+":
-		resVal.Add(leftVal, rightVal)
-	case "-":
-		resVal.Sub(leftVal, rightVal)
-	case "*":
-		resVal.Mul(leftVal, rightVal)
-	case "/":
-		resVal.Div(leftVal, rightVal)
-	case "%":
-		resVal.Mod(leftVal, rightVal)
-	default:
-		return e.NewError(node, "toán tử lạ: %s %s %s",
-			left.Type(), node.Operator, right.Type())
-	}
-	return &object.Integer{Value: &resVal}
-}
-
-func (e *Evaluator) evalFloatInfixExpression(
-	node *ast.InfixExpression,
-	left, right object.Object,
-) object.Object {
-	leftVal := left.(*object.Float).Value
-	rightVal := right.(*object.Float).Value
-
-	switch node.Operator {
-	case "<":
-		return nativeBoolToBooleanObject(leftVal < rightVal)
-	case ">":
-		return nativeBoolToBooleanObject(leftVal > rightVal)
-	case "<=":
-		return nativeBoolToBooleanObject(leftVal <= rightVal)
-	case ">=":
-		return nativeBoolToBooleanObject(leftVal >= rightVal)
-	case "==":
-		return nativeBoolToBooleanObject(leftVal == rightVal)
-	case "!=":
-		return nativeBoolToBooleanObject(leftVal != rightVal)
-	case "+":
-		return &object.Float{Value: leftVal + rightVal}
-	case "-":
-		return &object.Float{Value: leftVal - rightVal}
-	case "*":
-		return &object.Float{Value: leftVal * rightVal}
-	case "/":
-		return &object.Float{Value: leftVal / rightVal}
-	default:
-		return e.NewError(node, "toán tử lạ: %s %s %s",
-			left.Type(), node.Operator, right.Type())
-	}
-}
-
-func (e *Evaluator) evalStringInfixExpression(
-	node *ast.InfixExpression,
-	left, right object.Object,
-) object.Object {
-	leftVal := left.(*object.String).Value
-	rightVal := right.(*object.String).Value
-
-	switch node.Operator {
-	case "+":
-		return &object.String{Value: leftVal + rightVal}
-	case "==":
-		return &object.Boolean{Value: leftVal == rightVal}
-	case "!=":
-		return &object.Boolean{Value: leftVal != rightVal}
-	case "<":
-		return &object.Boolean{Value: leftVal < rightVal}
-	case ">":
-		return &object.Boolean{Value: leftVal > rightVal}
-	case "<=":
-		return &object.Boolean{Value: leftVal <= rightVal}
-	case ">=":
-		return &object.Boolean{Value: leftVal >= rightVal}
-	default:
-		return e.NewError(node, "toán tử lạ: %s %s %s",
-			left.Type(), node.Operator, right.Type())
-	}
-
-}
-
-func (e *Evaluator) evalBooleanInfixExpression(
-	node *ast.InfixExpression,
-	left, right object.Object,
-) object.Object {
-	leftVal := left.(*object.Boolean).Value
-	rightVal := right.(*object.Boolean).Value
-
-	switch node.Operator {
-	case "||":
-		return &object.Boolean{Value: leftVal || rightVal}
-	case "&&":
-		return &object.Boolean{Value: leftVal && rightVal}
-	case "==":
-		return &object.Boolean{Value: leftVal == rightVal}
-	case "!=":
-		return &object.Boolean{Value: leftVal != rightVal}
-	default:
-		return e.NewError(node, "toán tử lạ: %s %s %s",
-			left.Type(), node.Operator, right.Type())
-	}
-
-}
-
 func (e *Evaluator) evalIfExpression(
 	ie *ast.IfExpression,
 ) object.Object {
@@ -439,15 +221,13 @@ func (e *Evaluator) evalWhileExpression(
 
 		result = e.Eval(ie.Body)
 
-		if result != nil {
-			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
-				return result
-			}
-
-			if rt == object.BREAK_SIGNAL_OBJ {
-				break
-			}
+		switch result.(type) {
+		case *object.ReturnValue:
+			return result
+		case *object.Error:
+			return result
+		case *object.BreakSignal:
+			return result
 		}
 	}
 
@@ -569,9 +349,9 @@ func unwrapReturnValue(obj object.Object) object.Object {
 func unwrapWhileSignal(obj object.Object) object.Object {
 	switch obj.(type) {
 	case *object.BreakSignal:
-		return nil
+		return NULL
 	case *object.ContinueSignal:
-		return nil
+		return NULL
 	default:
 		return obj
 	}
