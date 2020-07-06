@@ -1,0 +1,3 @@
+in_ra("Đây là ví dụ dùng lib http")
+đặt http = sử_dụng("../library/libhttp.vnl")
+http.req_post("http://127.0.0.1:3000/cifar_classifier","./imgs/palm.jpg")

@@ -2,10 +2,15 @@ package builtin
 
 import (
 	"fmt"
+	"log"
 	"math/big"
 	"os"
+	"strings"
+	"syscall"
 	"vnlang/ast"
+	"vnlang/lexer"
 	"vnlang/object"
+	"vnlang/parser"
 	"vnlang/repl"
 )
 
@@ -256,6 +261,61 @@ var Builtin = object.BuiltinFnMap{
 			fmt.Printf("Kết thúc thăm dò\n")
 
 			return NULL
+		},
+	},
+	// load(dll filename: str) -> dict{syscall}
+	"thư_viện": {
+		Fn: func(e object.Evaluator, node ast.Node, args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+					len(args))
+			}
+
+			path, ok := args[0].(*object.String)
+
+			if !ok {
+				return e.NewError(node, "Tham số truyền vào hàm `thư_viện` phải là một xâu đường dẫn. Nhận được kiểu %s",
+					args[0].Type())
+			}
+			h, err := syscall.LoadLibrary(path.Value) //Make sure this DLL follows Golang machine bit architecture (64-bit in my case)
+			if err != nil {
+				log.Fatal(err)
+			}
+			// syscall
+			define_syscall_func := "hàm(func_name, arg1, arg2) { trả_về gọi_hàm_ngoài_toàn_chuỗi_2( " + fmt.Sprint(h) + ",func_name, arg1, arg2);}"
+			l := lexer.New(strings.NewReader(define_syscall_func), "<test>")
+			p := parser.New(l)
+			program := p.ParseProgram()
+			evaluated := e.Eval(program)
+			syscall_func, ok := evaluated.(*object.Function)
+			// base_pairs := map[object.HashKey]object.Function{
+			// 	(&object.String{Value: "gọi_hàm_ngoài_toàn_chuỗi_2"}).HashKey(): *syscall_func,
+			// }
+			pairs := make(map[object.HashKey]object.HashPair)
+			key := &object.String{Value: "gọi_hàm_ngoài_toàn_chuỗi_2"}
+			hashed := key.HashKey()
+			pairs[hashed] = object.HashPair{Key: key, Value: syscall_func}
+			return &object.Hash{Pairs: pairs, Mut: object.IMMUTABLE}
+		},
+	},
+	// Fix builtin syscall2 (dll: handle, function name: str, arg1: str, arg2: str) -> str
+	"gọi_hàm_ngoài_toàn_chuỗi_2": {
+		Fn: func(e object.Evaluator, node ast.Node, args ...object.Object) object.Object {
+			if len(args) != 4 {
+				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 4",
+					len(args))
+			}
+			handle, ok := args[0].(*object.Integer)
+			ffi_func, ok := args[1].(*object.String)
+			if !ok {
+				return e.NewError(node, "Tham số truyền vào hàm `thư_viện` phải là một xâu đường dẫn. Nhận được kiểu %s",
+					args[0].Type())
+			}
+			arg1, ok := args[2].(*object.String)
+			arg2, ok := args[3].(*object.String)
+			// Add more if later
+			res := syscall2_str_helper(syscall.Handle(handle.Value.Int64()), ffi_func.Value, arg1.Value, arg2.Value)
+			return &object.String{Value: res}
 		},
 	},
 }

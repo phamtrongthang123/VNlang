@@ -1,0 +1,6 @@
+đặt http = thư_viện("../library/libhttp.dll")
+đặt req_post = hàm(url,filename){
+	trả_về http.gọi_hàm_ngoài_toàn_chuỗi_2("req_post",url,filename)
+}
+
+đặt xuất = {req_post}

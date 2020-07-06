@@ -1,0 +1,12 @@
+đặt fibonacci = hàm(x) {
+  nếu (x == 0) {
+    0
+  } ngược_lại {
+    nếu (x == 1) {
+      trả_về 1;
+    } ngược_lại {
+      fibonacci(x - 1) + fibonacci(x - 2);
+    }
+  }
+};
+fibonacci(30);
