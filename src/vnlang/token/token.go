@@ -37,6 +37,8 @@ const (
 	EQ     = "=="
 	NOT_EQ = "!="
 
+	IN = "THUỘC"
+
 	// Delimiters
 	COMMA     = ","
 	SEMICOLON = ";"
@@ -53,6 +55,8 @@ const (
 	// Keywords
 	FUNCTION = "HÀM"
 	LET      = "ĐẶT"
+	MUT      = "BIẾN"
+	CONST    = "HẰNG"
 	TRUE     = "ĐÚNG"
 	FALSE    = "SAI"
 	IF       = "NẾU"
@@ -74,6 +78,8 @@ type Token struct {
 var keywords = map[string]TokenType{
 	"hàm":       FUNCTION,
 	"đặt":       LET,
+	"biến":      MUT,
+	"hằng":      CONST,
 	"đúng":      TRUE,
 	"sai":       FALSE,
 	"nếu":       IF,
@@ -83,6 +89,7 @@ var keywords = map[string]TokenType{
 	"khi":       WHILE,
 	"ngắt":      BREAK,
 	"tiếp":      CONTINUE,
+	"thuộc":     IN,
 }
 
 func GetNullToken() Token {

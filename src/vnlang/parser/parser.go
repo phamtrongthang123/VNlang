@@ -12,9 +12,11 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN
 	LOGICAL
 	EQUALS      // ==
 	LESSGREATER // > or <
+	IN          // In operator
 	SUM         // +
 	PRODUCT     // *
 	PREFIX      // -X or !X
@@ -23,6 +25,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.ASSIGN:   ASSIGN,
 	token.AND:      LOGICAL,
 	token.OR:       LOGICAL,
 	token.EQ:       EQUALS,
@@ -31,6 +34,7 @@ var precedences = map[token.TokenType]int{
 	token.GT:       LESSGREATER,
 	token.LE:       LESSGREATER,
 	token.GE:       LESSGREATER,
+	token.IN:       IN,
 	token.PLUS:     SUM,
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
@@ -72,6 +76,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.CONST, p.parsePrefixExpression)
+	p.registerPrefix(token.MUT, p.parsePrefixExpression)
+
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
@@ -94,6 +101,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LE, p.parseInfixExpression)
 	p.registerInfix(token.GE, p.parseInfixExpression)
+	p.registerInfix(token.IN, p.parseInfixExpression)
+	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
+
 	p.registerInfix(token.DOT, p.parseDotExpression)
 
 	p.registerInfix(token.AND, p.parseInfixExpression)
