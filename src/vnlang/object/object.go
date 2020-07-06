@@ -56,7 +56,12 @@ type BuiltinFnMap map[string]*Builtin
 
 type ObjectType string
 
+func (i ObjectType) Type() ObjectType    { return TYPE_OBJ }
+func (i ObjectType) Inspect() string     { return (string)(i) }
+func (i ObjectType) Mutable() Mutability { return IMMUTABLE }
+
 const (
+	TYPE_OBJ  = "KIỂU"
 	NULL_OBJ  = "NULL"
 	ERROR_OBJ = "LỖI"
 
@@ -241,7 +246,14 @@ type Array struct {
 	Mut      Mutability
 }
 
-func (ao *Array) Type() ObjectType { return ARRAY_OBJ }
+func (ao *Array) Type() ObjectType {
+	if ao.Mut == MUTABLE {
+		return ARRAY_OBJ + "_ĐỘNG"
+	} else {
+		return ARRAY_OBJ
+	}
+}
+
 func (ao *Array) Inspect() string {
 	var out bytes.Buffer
 
@@ -275,7 +287,14 @@ type Hash struct {
 	Mut   Mutability
 }
 
-func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Type() ObjectType {
+	if h.Mut == MUTABLE {
+		return HASH_OBJ + "_ĐỘNG"
+	} else {
+		return HASH_OBJ
+	}
+}
+
 func (h *Hash) Inspect() string {
 	var out bytes.Buffer
 

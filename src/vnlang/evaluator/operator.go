@@ -24,7 +24,7 @@ func (e *Evaluator) changeMut(node ast.Node, obj object.Object, mut object.Mutab
 	case *object.Hash:
 		return obj.Clone(mut)
 	default:
-		return e.NewError(node, "Không thể đổi kiểu của biến kiểu %s", obj.Type())
+		return e.NewError(node, "Không thể đổi kiểu cho '%s'", obj.Type())
 	}
 }
 
@@ -89,38 +89,40 @@ func (e *Evaluator) evalInfixExpression(
 		left = *refLeft.Obj
 	}
 
-	leftType := left.Type()
-	rightType := right.Type()
-
-	if leftType != rightType {
-		switch node.Operator {
-		case "thuộc":
-			right, ok := right.(*object.Hash)
-			if !ok {
-				return e.NewError(node, "toán tử 'thuộc' cần hạng tử bên phải thuộc kiểu 'băm' (nhận kiểu %s)", rightType)
-			}
-			return e.evalInOperator(node, right, left)
-		default:
-			return e.NewError(node, "kiểu không tương thích: %s %s %s", leftType, node.Operator, rightType)
-		}
-
-	}
-
 	switch left := left.(type) {
 	case *object.Integer:
-		return e.evalIntegerInfixExpression(node, left, right.(*object.Integer))
+		if right, ok := right.(*object.Integer); ok {
+			return e.evalIntegerInfixExpression(node, left, right)
+		}
 	case *object.Float:
-		return e.evalFloatInfixExpression(node, left, right.(*object.Float))
+		if right, ok := right.(*object.Float); ok {
+			return e.evalFloatInfixExpression(node, left, right)
+		}
 	case *object.String:
-		return e.evalStringInfixExpression(node, left, right.(*object.String))
+		if right, ok := right.(*object.String); ok {
+			return e.evalStringInfixExpression(node, left, right)
+		}
 	case *object.Boolean:
-		return e.evalBooleanInfixExpression(node, left, right.(*object.Boolean))
+		if right, ok := right.(*object.Boolean); ok {
+			return e.evalBooleanInfixExpression(node, left, right)
+		}
 	case *object.Array:
-		return e.evalArrayInfixExpression(node, left, right.(*object.Array))
+		if right, ok := right.(*object.Array); ok {
+			return e.evalArrayInfixExpression(node, left, right)
+		}
+	}
+
+	switch node.Operator {
+	case "thuộc":
+		right, ok := right.(*object.Hash)
+		if !ok {
+			return e.NewError(node, "toán tử 'thuộc' cần hạng tử bên phải thuộc kiểu 'băm' (nhận kiểu %s)", right.Type())
+		}
+		return e.evalInOperator(node, right, left)
 	}
 
 	return e.NewError(node, "toán tử lạ: %s %s %s",
-		leftType, node.Operator, rightType)
+		left.Type(), node.Operator, right.Type())
 }
 
 func evalBangOperatorExpression(right object.Object) *object.Boolean {

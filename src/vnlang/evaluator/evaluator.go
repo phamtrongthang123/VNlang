@@ -171,11 +171,15 @@ func (e *Evaluator) evalBlockStatement(
 	for _, statement := range block.Statements {
 		result = e.Eval(statement)
 
-		if result != nil {
-			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.BREAK_SIGNAL_OBJ || rt == object.CONTINUE_SIGNAL_OBJ || rt == object.ERROR_OBJ {
-				return result
-			}
+		switch result := result.(type) {
+		case *object.Error:
+			return result
+		case *object.ReturnValue:
+			return result
+		case *object.BreakSignal:
+			return result
+		case *object.ContinueSignal:
+			return result
 		}
 	}
 
@@ -367,34 +371,37 @@ func (e *Evaluator) evalIndexExpression(node *ast.IndexExpression) object.Object
 		return index
 	}
 
-	switch {
-	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+	switch left := left.(type) {
+	case *object.Array:
+		index, ok := index.(*object.Integer)
+		if !ok {
+			return e.NewError(node, "chỉ có thể lấy chỉ mục 'nguyên' của 'mảng', nhận kiểu chỉ mục '%s'", index.Type())
+		}
 		return evalArrayIndexExpression(left, index)
-	case left.Type() == object.HASH_OBJ:
+	case *object.Hash:
 		return e.evalHashIndexExpression(node, left, index)
 	default:
 		return e.NewError(node, "toán tử chỉ mục không hỗ trợ cho: %s", left.Type())
 	}
 }
 
-func evalArrayIndexExpression(array, index object.Object) object.Object {
-	arrayObject := array.(*object.Array)
-	idxBig := index.(*object.Integer).Value
+func evalArrayIndexExpression(array *object.Array, index *object.Integer) object.Object {
+	idxBig := index.Value
 	if !idxBig.IsInt64() {
 		return NULL
 	}
 
 	idx := idxBig.Int64()
-	max := int64(len(arrayObject.Elements) - 1)
+	max := int64(len(array.Elements) - 1)
 
 	if idx < 0 || idx > max {
 		return NULL
 	}
 
-	if arrayObject.Mut == object.MUTABLE {
-		return &object.RefObject{Obj: &(arrayObject.Elements[idx])}
+	if array.Mut == object.MUTABLE {
+		return &object.RefObject{Obj: &(array.Elements[idx])}
 	} else {
-		return arrayObject.Elements[idx]
+		return array.Elements[idx]
 	}
 }
 

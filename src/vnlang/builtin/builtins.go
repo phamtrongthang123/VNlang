@@ -34,6 +34,15 @@ var Builtin = object.BuiltinFnMap{
 		}
 	},
 	},
+	"kiểu": {Fn: func(e object.Evaluator, node ast.Node, args ...object.Object) object.Object {
+		if len(args) != 1 {
+			return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
+				len(args))
+		}
+
+		return args[0].Type()
+	},
+	},
 	// convert big int to float
 	"thực": {Fn: func(e object.Evaluator, node ast.Node, args ...object.Object) object.Object {
 		if len(args) != 1 {
@@ -100,12 +109,13 @@ var Builtin = object.BuiltinFnMap{
 				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 					len(args))
 			}
-			if args[0].Type() != object.ARRAY_OBJ {
+
+			arr, ok := args[0].(*object.Array)
+			if !ok {
 				return e.NewError(node, "Tham số truyền vào hàm lấy `đầu` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
-			arr := args[0].(*object.Array)
 			if len(arr.Elements) > 0 {
 				return arr.Elements[0]
 			}
@@ -120,12 +130,13 @@ var Builtin = object.BuiltinFnMap{
 				return e.NewError(node, "Sai số lượng tham số truyền vào. nhận được = %d, mong muốn = 1",
 					len(args))
 			}
-			if args[0].Type() != object.ARRAY_OBJ {
+
+			arr, ok := args[0].(*object.Array)
+			if !ok {
 				return e.NewError(node, "Tham số truyền vào hàm lấy `đuôi` của mảng phải thuộc kiểu Mảng. Nhận được kiểu %s",
 					args[0].Type())
 			}
 
-			arr := args[0].(*object.Array)
 			length := len(arr.Elements)
 			if length > 0 {
 				return arr.Elements[length-1]
@@ -149,6 +160,9 @@ var Builtin = object.BuiltinFnMap{
 					args[0].Type())
 			}
 
+			if len(arr.Elements) == 0 {
+				return NULL
+			}
 			return &object.Array{Elements: arr.Elements[1:]}
 		},
 	},
