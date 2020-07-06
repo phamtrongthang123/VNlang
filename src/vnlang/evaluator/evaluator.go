@@ -358,11 +358,11 @@ func unwrapWhileSignal(obj object.Object) object.Object {
 }
 
 func (e *Evaluator) evalIndexExpression(node *ast.IndexExpression) object.Object {
-	left := e.Eval(node.Left)
+	left := object.UnwrapReference(e.Eval(node.Left))
 	if object.IsError(left) {
 		return left
 	}
-	index := e.Eval(node.Index)
+	index := object.UnwrapReference(e.Eval(node.Index))
 	if object.IsError(index) {
 		return index
 	}
@@ -391,7 +391,11 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 		return NULL
 	}
 
-	return arrayObject.Elements[idx]
+	if arrayObject.Mut == object.MUTABLE {
+		return &object.RefObject{Obj: &(arrayObject.Elements[idx])}
+	} else {
+		return arrayObject.Elements[idx]
+	}
 }
 
 func (e *Evaluator) evalHashLiteral(
@@ -430,10 +434,18 @@ func (e *Evaluator) evalHashIndexExpression(node *ast.IndexExpression, hash, ind
 		return e.NewError(node, "không thể dùng như khóa băm: %s", index.Type())
 	}
 
-	pair, ok := hashObject.Pairs[key.HashKey()]
-	if !ok {
-		return NULL
+	hashKey := key.HashKey()
+	pair, ok := hashObject.Pairs[hashKey]
+	if hashObject.Mut == object.MUTABLE {
+		if !ok {
+			pair = object.HashPair{Key: index, Value: NULL}
+			hashObject.Pairs[hashKey] = pair
+		}
+		return &object.RefObject{Obj: &pair.Value}
+	} else {
+		if !ok {
+			return NULL
+		}
+		return pair.Value
 	}
-
-	return pair.Value
 }

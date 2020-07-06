@@ -11,6 +11,13 @@ import (
 	"vnlang/scanner"
 )
 
+type Mutability int
+
+const (
+	IMMUTABLE Mutability = iota
+	MUTABLE
+)
+
 type ActivationRecord struct {
 	CallNode *ast.CallExpression
 	Function Object
@@ -81,6 +88,7 @@ type Hashable interface {
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+	Mutable() Mutability
 }
 
 func IsError(obj Object) bool {
@@ -92,8 +100,10 @@ type Integer struct {
 	Value *big.Int
 }
 
-func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
-func (i *Integer) Inspect() string  { return i.Value.Text(10) }
+func (i *Integer) Type() ObjectType    { return INTEGER_OBJ }
+func (i *Integer) Inspect() string     { return i.Value.Text(10) }
+func (i *Integer) Mutable() Mutability { return IMMUTABLE }
+
 func (i *Integer) HashKey() HashKey {
 	h := fnv.New64a()
 	data := i.Value.Bytes()
@@ -110,14 +120,16 @@ type Float struct {
 	Value float64
 }
 
-func (i *Float) Type() ObjectType { return FLOAT_OBJ }
-func (i *Float) Inspect() string  { return fmt.Sprintf("%f", i.Value) }
+func (i *Float) Type() ObjectType    { return FLOAT_OBJ }
+func (i *Float) Inspect() string     { return fmt.Sprintf("%f", i.Value) }
+func (i *Float) Mutable() Mutability { return IMMUTABLE }
 
 type Boolean struct {
 	Value bool
 }
 
-func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
+func (b *Boolean) Type() ObjectType    { return BOOLEAN_OBJ }
+func (b *Boolean) Mutable() Mutability { return IMMUTABLE }
 func (b *Boolean) Inspect() string {
 	if b.Value {
 		return "đúng"
@@ -125,6 +137,7 @@ func (b *Boolean) Inspect() string {
 		return "sai"
 	}
 }
+
 func (b *Boolean) HashKey() HashKey {
 	var value uint64
 
@@ -139,27 +152,31 @@ func (b *Boolean) HashKey() HashKey {
 
 type Null struct{}
 
-func (n *Null) Type() ObjectType { return NULL_OBJ }
-func (n *Null) Inspect() string  { return "rỗng" }
+func (n *Null) Type() ObjectType    { return NULL_OBJ }
+func (n *Null) Inspect() string     { return "rỗng" }
+func (n *Null) Mutable() Mutability { return IMMUTABLE }
 
 type ReturnValue struct {
 	Value Object
 }
 
-func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
-func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
+func (rv *ReturnValue) Type() ObjectType    { return RETURN_VALUE_OBJ }
+func (rv *ReturnValue) Inspect() string     { return rv.Value.Inspect() }
+func (rv *ReturnValue) Mutable() Mutability { return IMMUTABLE }
 
 type BreakSignal struct {
 }
 
-func (rv *BreakSignal) Type() ObjectType { return BREAK_SIGNAL_OBJ }
-func (rv *BreakSignal) Inspect() string  { return "ngắt" }
+func (bs *BreakSignal) Type() ObjectType    { return BREAK_SIGNAL_OBJ }
+func (bs *BreakSignal) Inspect() string     { return "ngắt" }
+func (bs *BreakSignal) Mutable() Mutability { return IMMUTABLE }
 
 type ContinueSignal struct {
 }
 
-func (rv *ContinueSignal) Type() ObjectType { return CONTINUE_SIGNAL_OBJ }
-func (rv *ContinueSignal) Inspect() string  { return "ngắt" }
+func (cs *ContinueSignal) Type() ObjectType    { return CONTINUE_SIGNAL_OBJ }
+func (cs *ContinueSignal) Inspect() string     { return "ngắt" }
+func (cs *ContinueSignal) Mutable() Mutability { return IMMUTABLE }
 
 type Error struct {
 	Stack   CallStack
@@ -167,8 +184,9 @@ type Error struct {
 	Message string
 }
 
-func (e *Error) Type() ObjectType { return ERROR_OBJ }
-func (e *Error) Inspect() string  { return "LỖI " + e.Pos.String() + ": " + e.Message }
+func (e *Error) Type() ObjectType    { return ERROR_OBJ }
+func (e *Error) Inspect() string     { return "LỖI " + e.Pos.String() + ": " + e.Message }
+func (e *Error) Mutable() Mutability { return IMMUTABLE }
 
 type Function struct {
 	Parameters []*ast.Identifier
@@ -194,6 +212,7 @@ func (f *Function) Inspect() string {
 
 	return out.String()
 }
+func (f *Function) Mutable() Mutability { return IMMUTABLE }
 
 type String struct {
 	Value string
@@ -207,16 +226,19 @@ func (s *String) HashKey() HashKey {
 
 	return HashKey{Type: s.Type(), Value: h.Sum64()}
 }
+func (s *String) Mutable() Mutability { return IMMUTABLE }
 
 type Builtin struct {
 	Fn BuiltinFunction
 }
 
-func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
-func (b *Builtin) Inspect() string  { return "hàm có sẵn" }
+func (b *Builtin) Type() ObjectType    { return BUILTIN_OBJ }
+func (b *Builtin) Inspect() string     { return "hàm có sẵn" }
+func (b *Builtin) Mutable() Mutability { return IMMUTABLE }
 
 type Array struct {
 	Elements []Object
+	Mut      Mutability
 }
 
 func (ao *Array) Type() ObjectType { return ARRAY_OBJ }
@@ -234,6 +256,14 @@ func (ao *Array) Inspect() string {
 
 	return out.String()
 }
+func (ao *Array) Mutable() Mutability { return ao.Mut }
+func (ao *Array) Clone(mut Mutability) *Array {
+	length := len(ao.Elements)
+	newElements := make([]Object, length, length)
+	copy(newElements, ao.Elements)
+
+	return &Array{Elements: newElements, Mut: mut}
+}
 
 type HashPair struct {
 	Key   Object
@@ -242,6 +272,7 @@ type HashPair struct {
 
 type Hash struct {
 	Pairs map[HashKey]HashPair
+	Mut   Mutability
 }
 
 func (h *Hash) Type() ObjectType { return HASH_OBJ }
@@ -259,4 +290,37 @@ func (h *Hash) Inspect() string {
 	out.WriteString("}")
 
 	return out.String()
+}
+func (h *Hash) Mutable() Mutability { return h.Mut }
+func (h *Hash) Clone(mut Mutability) *Hash {
+	// Create the target map
+	newMap := make(map[HashKey]HashPair)
+
+	// Copy from the original map to the target map
+	for key, value := range h.Pairs {
+		newMap[key] = value
+	}
+
+	return &Hash{Pairs: newMap, Mut: mut}
+}
+
+type RefObject struct {
+	Obj *Object
+}
+
+func (ro *RefObject) Type() ObjectType { return "TRỎ(" + (*ro.Obj).Type() + ")" }
+func (ro *RefObject) Inspect() string {
+	return (*ro.Obj).Inspect()
+}
+func (ro *RefObject) Mutable() Mutability { return MUTABLE }
+func (ro *RefObject) GetValue() Object    { return *ro.Obj }
+func (ro *RefObject) GetRef() *Object     { return ro.Obj }
+
+func UnwrapReference(obj Object) Object {
+	switch obj := obj.(type) {
+	case *RefObject:
+		return *obj.Obj
+	default:
+		return obj
+	}
 }

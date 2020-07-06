@@ -166,13 +166,19 @@ var Builtin = object.BuiltinFnMap{
 					args[0].Type())
 			}
 
-			length := len(arr.Elements)
-			newElements := make([]object.Object, length+1, length+1)
+			if arr.Mut == object.IMMUTABLE {
+				length := len(arr.Elements)
+				newElements := make([]object.Object, length+1, length+1)
 
-			copy(newElements, arr.Elements)
-			newElements[length] = args[1]
+				copy(newElements, arr.Elements)
+				newElements[length] = args[1]
 
-			return &object.Array{Elements: newElements}
+				return &object.Array{Elements: newElements}
+			} else if arr.Mut == object.MUTABLE {
+				return &object.Array{Elements: append(arr.Elements, args[1]), Mut: object.MUTABLE}
+			} else {
+				return e.NewError(node, "Không thể xảy ra ??!!")
+			}
 		},
 	},
 	"sử_dụng": {

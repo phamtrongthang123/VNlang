@@ -13,13 +13,32 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	return FALSE
 }
 
+func (e *Evaluator) changeMut(node ast.Node, obj object.Object, mut object.Mutability) object.Object {
+	if obj.Mutable() == mut {
+		return obj
+	}
+
+	switch obj := obj.(type) {
+	case *object.Array:
+		return obj.Clone(mut)
+	case *object.Hash:
+		return obj.Clone(mut)
+	default:
+		return e.NewError(node, "Không thể đổi kiểu của biến kiểu %s", obj.Type())
+	}
+}
+
 func (e *Evaluator) evalPrefixExpression(node *ast.PrefixExpression) object.Object {
-	right := e.Eval(node.Right)
+	right := object.UnwrapReference(e.Eval(node.Right))
 	if object.IsError(right) {
 		return right
 	}
 
 	switch node.Operator {
+	case "hằng":
+		return e.changeMut(node, right, object.IMMUTABLE)
+	case "biến":
+		return e.changeMut(node, right, object.MUTABLE)
 	case "!":
 		return evalBangOperatorExpression(right)
 	case "-":
@@ -37,9 +56,24 @@ func (e *Evaluator) evalInfixExpression(
 		return left
 	}
 
-	right := e.Eval(node.Right)
+	right := object.UnwrapReference(e.Eval(node.Right))
 	if object.IsError(right) {
 		return right
+	}
+
+	refLeft, ref := left.(*object.RefObject)
+	switch node.Operator {
+	case "=":
+		if !ref || refLeft.Mutable() != object.MUTABLE {
+			return e.NewError(node, "Vế trái không phải giá trị có thể gán")
+		}
+		*refLeft.Obj = right
+		return left
+	}
+
+	// Unwrap reference
+	if ref {
+		left = *refLeft.Obj
 	}
 
 	leftType := left.Type()
