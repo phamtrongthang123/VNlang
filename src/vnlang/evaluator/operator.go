@@ -48,6 +48,19 @@ func (e *Evaluator) evalPrefixExpression(node *ast.PrefixExpression) object.Obje
 	}
 }
 
+func (e *Evaluator) evalInOperator(node *ast.InfixExpression, hash, index object.Object) object.Object {
+	hashObject := hash.(*object.Hash)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return e.NewError(node, "không thể dùng như khóa băm: %s", index.Type())
+	}
+
+	hashKey := key.HashKey()
+	_, ok = hashObject.Pairs[hashKey]
+	return &object.Boolean{Value: ok}
+}
+
 func (e *Evaluator) evalInfixExpression(
 	node *ast.InfixExpression,
 ) object.Object {
@@ -80,7 +93,17 @@ func (e *Evaluator) evalInfixExpression(
 	rightType := right.Type()
 
 	if leftType != rightType {
-		return e.NewError(node, "kiểu không tương thích: %s %s %s", leftType, node.Operator, rightType)
+		switch node.Operator {
+		case "thuộc":
+			right, ok := right.(*object.Hash)
+			if !ok {
+				return e.NewError(node, "toán tử 'thuộc' cần hạng tử bên phải thuộc kiểu 'băm' (nhận kiểu %s)", rightType)
+			}
+			return e.evalInOperator(node, right, left)
+		default:
+			return e.NewError(node, "kiểu không tương thích: %s %s %s", leftType, node.Operator, rightType)
+		}
+
 	}
 
 	switch left := left.(type) {
@@ -94,13 +117,6 @@ func (e *Evaluator) evalInfixExpression(
 		return e.evalBooleanInfixExpression(node, left, right.(*object.Boolean))
 	case *object.Array:
 		return e.evalArrayInfixExpression(node, left, right.(*object.Array))
-	}
-
-	switch node.Operator {
-	case "==":
-		return nativeBoolToBooleanObject(left == right)
-	case "!=":
-		return nativeBoolToBooleanObject(left != right)
 	}
 
 	return e.NewError(node, "toán tử lạ: %s %s %s",

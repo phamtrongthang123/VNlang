@@ -313,8 +313,6 @@ func (ro *RefObject) Inspect() string {
 	return (*ro.Obj).Inspect()
 }
 func (ro *RefObject) Mutable() Mutability { return MUTABLE }
-func (ro *RefObject) GetValue() Object    { return *ro.Obj }
-func (ro *RefObject) GetRef() *Object     { return ro.Obj }
 
 func UnwrapReference(obj Object) Object {
 	switch obj := obj.(type) {

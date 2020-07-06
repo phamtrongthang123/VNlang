@@ -37,6 +37,8 @@ const (
 	EQ     = "=="
 	NOT_EQ = "!="
 
+	IN = "THUỘC"
+
 	// Delimiters
 	COMMA     = ","
 	SEMICOLON = ";"
@@ -87,6 +89,7 @@ var keywords = map[string]TokenType{
 	"khi":       WHILE,
 	"ngắt":      BREAK,
 	"tiếp":      CONTINUE,
+	"thuộc":     IN,
 }
 
 func GetNullToken() Token {

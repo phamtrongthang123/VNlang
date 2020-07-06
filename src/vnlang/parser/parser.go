@@ -16,6 +16,7 @@ const (
 	LOGICAL
 	EQUALS      // ==
 	LESSGREATER // > or <
+	IN          // In operator
 	SUM         // +
 	PRODUCT     // *
 	PREFIX      // -X or !X
@@ -33,6 +34,7 @@ var precedences = map[token.TokenType]int{
 	token.GT:       LESSGREATER,
 	token.LE:       LESSGREATER,
 	token.GE:       LESSGREATER,
+	token.IN:       IN,
 	token.PLUS:     SUM,
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
@@ -99,6 +101,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LE, p.parseInfixExpression)
 	p.registerInfix(token.GE, p.parseInfixExpression)
+	p.registerInfix(token.IN, p.parseInfixExpression)
 	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
 
 	p.registerInfix(token.DOT, p.parseDotExpression)
