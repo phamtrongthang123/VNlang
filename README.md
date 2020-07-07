@@ -21,7 +21,7 @@ Các tính năng chính:
 
 ## Usage
 
-Trước mắt là phải sử dụng qua repl, do chưa phát triển dịch từ script file.
+### REPL
 
 ```
 cd src
@@ -67,6 +67,14 @@ nếu (b == 0) trả_về 0; ngược_lại nếu (b == 1) trả_về 1; ngượ
 >> fi(9)
 34
 ```
+
+### Run script
+
+#### HTTP example 
+
+Chạy theo hướng dẫn ở repo này: https://github.com/phamtrongthang123/software_design_final_term_project
+
+
 
 ## License
 
